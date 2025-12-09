@@ -8,10 +8,12 @@ export class CreateConfiguracaoGlobalUseCase {
   async execute(schema: string, data: CreateConfiguracaoGlobalDTO) {
     const config = ConfiguracaoGlobal.create({
       logo_base64: data.logo_base64 ?? null,
-      cor_primaria: data.cor_primaria ?? null,
-      cor_secundaria: data.cor_secundaria ?? null,
-      cor_texto: data.cor_texto ?? null,
-      cor_destaque_texto: data.cor_destaque_texto ?? null,
+      cor_fundo: data.cor_fundo ?? null,
+      cor_card: data.cor_card ?? null,
+      cor_texto_card: data.cor_texto_card ?? null,
+      cor_valor_card: data.cor_valor_card ?? null,
+      cor_botao: data.cor_botao ?? null,
+      cor_texto_botao: data.cor_texto_botao ?? null,
       fonte_titulos: data.fonte_titulos ?? null,
       fonte_textos: data.fonte_textos ?? null,
       usu_cadastro: data.usu_cadastro ?? 0,

@@ -2,22 +2,36 @@ import type { Request, Response, NextFunction } from 'express'
 import { AppError } from '../errors/AppError'
 
 /**
- * Lista de rotas públicas que não precisam de autorização
- * As rotas podem vir com ou sem o prefixo /api
- */
-const PUBLIC_ROUTES = [
-  '/health',
-  '/api/health',
-  '/docs',
-  '/api/docs',
-]
-
-/**
  * Verifica se uma rota é pública
+ * Nota: O path que chega aqui já tem o prefixo /api removido (porque o middleware é aplicado em /api)
+ * Então /api/casona/lojas/1 chega como /casona/lojas/1
  */
 const isPublicRoute = (path: string): boolean => {
-  const normalizedPath = path.startsWith('/') ? path : `/${path}`
-  return PUBLIC_ROUTES.some((publicRoute) => normalizedPath.startsWith(publicRoute))
+  // Remove query string e normaliza o path
+  const pathWithoutQuery = path.split('?')[0]
+  const normalizedPath = pathWithoutQuery.startsWith('/') ? pathWithoutQuery : `/${pathWithoutQuery}`
+  
+  // Rotas exatas públicas
+  const exactPublicRoutes = [
+    '/health',
+    '/docs',
+  ]
+  
+  if (exactPublicRoutes.some((publicRoute) => normalizedPath === publicRoute || normalizedPath.startsWith(publicRoute))) {
+    return true
+  }
+  
+  // Verifica rotas com padrões dinâmicos (com schema no path)
+  // Como o /api já foi removido, os padrões não precisam incluir /api
+  // Ex: /casona/configuracoes-globais, /casona/itens-recompensa, etc.
+  const publicPatterns = [
+    /^\/[^/]+\/configuracoes-globais/,  // /casona/configuracoes-globais
+    /^\/clientes-concordia\/schema\/[^/]+/,  // /clientes-concordia/schema/casona
+    /^\/[^/]+\/itens-recompensa/,  // /casona/itens-recompensa
+    /^\/[^/]+\/lojas\/\d+/,  // /casona/lojas/1
+  ]
+  
+  return publicPatterns.some((pattern) => pattern.test(normalizedPath))
 }
 
 /**

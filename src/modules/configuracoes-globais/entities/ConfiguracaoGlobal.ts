@@ -1,10 +1,12 @@
 export interface ConfiguracaoGlobalProps {
   id_config_global?: number
   logo_base64?: string | null
-  cor_primaria?: string | null
-  cor_secundaria?: string | null
-  cor_texto?: string | null
-  cor_destaque_texto?: string | null
+  cor_fundo?: string | null
+  cor_card?: string | null
+  cor_texto_card?: string | null
+  cor_valor_card?: string | null
+  cor_botao?: string | null
+  cor_texto_botao?: string | null
   fonte_titulos?: string | null
   fonte_textos?: string | null
   dt_cadastro?: Date
@@ -20,10 +22,12 @@ export type CreateConfiguracaoGlobalProps = Omit<
 
 export type UpdateConfiguracaoGlobalProps = {
   logo_base64?: string | null
-  cor_primaria?: string | null
-  cor_secundaria?: string | null
-  cor_texto?: string | null
-  cor_destaque_texto?: string | null
+  cor_fundo?: string | null
+  cor_card?: string | null
+  cor_texto_card?: string | null
+  cor_valor_card?: string | null
+  cor_botao?: string | null
+  cor_texto_botao?: string | null
   fonte_titulos?: string | null
   fonte_textos?: string | null
   usu_altera?: number | null
@@ -52,17 +56,23 @@ export class ConfiguracaoGlobal {
     if (typeof data.logo_base64 !== 'undefined') {
       nextProps.logo_base64 = data.logo_base64
     }
-    if (typeof data.cor_primaria !== 'undefined') {
-      nextProps.cor_primaria = data.cor_primaria
+    if (typeof data.cor_fundo !== 'undefined') {
+      nextProps.cor_fundo = data.cor_fundo
     }
-    if (typeof data.cor_secundaria !== 'undefined') {
-      nextProps.cor_secundaria = data.cor_secundaria
+    if (typeof data.cor_card !== 'undefined') {
+      nextProps.cor_card = data.cor_card
     }
-    if (typeof data.cor_texto !== 'undefined') {
-      nextProps.cor_texto = data.cor_texto
+    if (typeof data.cor_texto_card !== 'undefined') {
+      nextProps.cor_texto_card = data.cor_texto_card
     }
-    if (typeof data.cor_destaque_texto !== 'undefined') {
-      nextProps.cor_destaque_texto = data.cor_destaque_texto
+    if (typeof data.cor_valor_card !== 'undefined') {
+      nextProps.cor_valor_card = data.cor_valor_card
+    }
+    if (typeof data.cor_botao !== 'undefined') {
+      nextProps.cor_botao = data.cor_botao
+    }
+    if (typeof data.cor_texto_botao !== 'undefined') {
+      nextProps.cor_texto_botao = data.cor_texto_botao
     }
     if (typeof data.fonte_titulos !== 'undefined') {
       nextProps.fonte_titulos = data.fonte_titulos

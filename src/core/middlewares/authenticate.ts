@@ -40,14 +40,47 @@ const PUBLIC_ROUTES = [
   '/api/clientes/auth/password/reset',
   '/docs',
   '/api/docs',
+  // Rotas públicas para configurações globais
+  '/configuracoes-globais',
+  '/api/configuracoes-globais',
+  // Rotas públicas para clientes concordia
+  '/clientes-concordia/schema',
+  '/api/clientes-concordia/schema',
+  // Rotas públicas para itens de recompensa
+  '/itens-recompensa',
+  '/api/itens-recompensa',
+  // Rotas públicas para lojas (para validação de id_loja)
+  '/lojas',
+  '/api/lojas',
 ]
 
 /**
  * Verifica se uma rota é pública
+ * Nota: O path que chega aqui já tem o prefixo /api removido (porque o middleware é aplicado em /api)
+ * Então /api/casona/lojas/1 chega como /casona/lojas/1
  */
 const isPublicRoute = (path: string): boolean => {
-  const normalizedPath = path.startsWith('/') ? path : `/${path}`
-  return PUBLIC_ROUTES.some((publicRoute) => normalizedPath.startsWith(publicRoute))
+  // Remove query string e normaliza o path
+  const pathWithoutQuery = path.split('?')[0]
+  const normalizedPath = pathWithoutQuery.startsWith('/') ? pathWithoutQuery : `/${pathWithoutQuery}`
+  
+  // Verifica rotas exatas primeiro (sem /api porque já foi removido)
+  const routesWithoutApi = PUBLIC_ROUTES.map(route => route.replace('/api', ''))
+  if (routesWithoutApi.some((publicRoute) => normalizedPath === publicRoute || normalizedPath.startsWith(publicRoute))) {
+    return true
+  }
+  
+  // Verifica rotas com padrões dinâmicos (com schema no path)
+  // Como o /api já foi removido, os padrões não precisam incluir /api
+  // Ex: /casona/configuracoes-globais, /casona/itens-recompensa, etc.
+  const publicPatterns = [
+    /^\/[^/]+\/configuracoes-globais/,  // /casona/configuracoes-globais
+    /^\/clientes-concordia\/schema\/[^/]+/,  // /clientes-concordia/schema/casona
+    /^\/[^/]+\/itens-recompensa/,  // /casona/itens-recompensa
+    /^\/[^/]+\/lojas\/\d+/,  // /casona/lojas/1
+  ]
+  
+  return publicPatterns.some((pattern) => pattern.test(normalizedPath))
 }
 
 /**

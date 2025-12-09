@@ -6,10 +6,12 @@ import type { IConfiguracaoGlobalRepository } from './IConfiguracaoGlobalReposit
 type ConfiguracaoGlobalRow = {
   id_config_global: number
   logo_base64: string | null
-  cor_primaria: string | null
-  cor_secundaria: string | null
-  cor_texto: string | null
-  cor_destaque_texto: string | null
+  cor_fundo: string | null
+  cor_card: string | null
+  cor_texto_card: string | null
+  cor_valor_card: string | null
+  cor_botao: string | null
+  cor_texto_botao: string | null
   fonte_titulos: string | null
   fonte_textos: string | null
   dt_cadastro: Date
@@ -21,10 +23,12 @@ type ConfiguracaoGlobalRow = {
 const mapRowToProps = (row: ConfiguracaoGlobalRow): ConfiguracaoGlobalProps => ({
   id_config_global: row.id_config_global,
   logo_base64: row.logo_base64,
-  cor_primaria: row.cor_primaria,
-  cor_secundaria: row.cor_secundaria,
-  cor_texto: row.cor_texto,
-  cor_destaque_texto: row.cor_destaque_texto,
+  cor_fundo: row.cor_fundo,
+  cor_card: row.cor_card,
+  cor_texto_card: row.cor_texto_card,
+  cor_valor_card: row.cor_valor_card,
+  cor_botao: row.cor_botao,
+  cor_texto_botao: row.cor_texto_botao,
   fonte_titulos: row.fonte_titulos,
   fonte_textos: row.fonte_textos,
   dt_cadastro: row.dt_cadastro,
@@ -74,15 +78,17 @@ export class PostgresConfiguracaoGlobalRepository implements IConfiguracaoGlobal
     try {
       const result = await client.query<ConfiguracaoGlobalRow>(
         `INSERT INTO "${schema}".configuracoes_globais 
-         (logo_base64, cor_primaria, cor_secundaria, cor_texto, cor_destaque_texto, fonte_titulos, fonte_textos, usu_cadastro, dt_cadastro)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+         (logo_base64, cor_fundo, cor_card, cor_texto_card, cor_valor_card, cor_botao, cor_texto_botao, fonte_titulos, fonte_textos, usu_cadastro, dt_cadastro)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
          RETURNING *`,
         [
           data.logo_base64 ?? null,
-          data.cor_primaria ?? null,
-          data.cor_secundaria ?? null,
-          data.cor_texto ?? null,
-          data.cor_destaque_texto ?? null,
+          data.cor_fundo ?? null,
+          data.cor_card ?? null,
+          data.cor_texto_card ?? null,
+          data.cor_valor_card ?? null,
+          data.cor_botao ?? null,
+          data.cor_texto_botao ?? null,
           data.fonte_titulos ?? null,
           data.fonte_textos ?? null,
           data.usu_cadastro,
@@ -105,21 +111,29 @@ export class PostgresConfiguracaoGlobalRepository implements IConfiguracaoGlobal
         updates.push(`logo_base64 = $${paramIndex++}`)
         values.push(data.logo_base64 ?? null)
       }
-      if (typeof data.cor_primaria !== 'undefined') {
-        updates.push(`cor_primaria = $${paramIndex++}`)
-        values.push(data.cor_primaria ?? null)
+      if (typeof data.cor_fundo !== 'undefined') {
+        updates.push(`cor_fundo = $${paramIndex++}`)
+        values.push(data.cor_fundo ?? null)
       }
-      if (typeof data.cor_secundaria !== 'undefined') {
-        updates.push(`cor_secundaria = $${paramIndex++}`)
-        values.push(data.cor_secundaria ?? null)
+      if (typeof data.cor_card !== 'undefined') {
+        updates.push(`cor_card = $${paramIndex++}`)
+        values.push(data.cor_card ?? null)
       }
-      if (typeof data.cor_texto !== 'undefined') {
-        updates.push(`cor_texto = $${paramIndex++}`)
-        values.push(data.cor_texto ?? null)
+      if (typeof data.cor_texto_card !== 'undefined') {
+        updates.push(`cor_texto_card = $${paramIndex++}`)
+        values.push(data.cor_texto_card ?? null)
       }
-      if (typeof data.cor_destaque_texto !== 'undefined') {
-        updates.push(`cor_destaque_texto = $${paramIndex++}`)
-        values.push(data.cor_destaque_texto ?? null)
+      if (typeof data.cor_valor_card !== 'undefined') {
+        updates.push(`cor_valor_card = $${paramIndex++}`)
+        values.push(data.cor_valor_card ?? null)
+      }
+      if (typeof data.cor_botao !== 'undefined') {
+        updates.push(`cor_botao = $${paramIndex++}`)
+        values.push(data.cor_botao ?? null)
+      }
+      if (typeof data.cor_texto_botao !== 'undefined') {
+        updates.push(`cor_texto_botao = $${paramIndex++}`)
+        values.push(data.cor_texto_botao ?? null)
       }
       if (typeof data.fonte_titulos !== 'undefined') {
         updates.push(`fonte_titulos = $${paramIndex++}`)
