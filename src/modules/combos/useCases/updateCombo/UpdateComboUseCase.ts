@@ -20,12 +20,13 @@ export class UpdateComboUseCase {
     }
 
     const combo = Combo.restore(existing)
-    combo.update({
-      descricao: data.descricao,
-      chave: data.chave,
-      script: data.script,
+    const updateData: UpdateComboDTO = {
       usu_altera: data.usu_altera ?? null,
-    })
+    }
+    if (data.descricao !== undefined) updateData.descricao = data.descricao
+    if (data.chave !== undefined) updateData.chave = data.chave
+    if (data.script !== undefined) updateData.script = data.script
+    combo.update(updateData)
 
     const updated = await this.comboRepository.update(id, combo.toJSON())
     return updated || existing

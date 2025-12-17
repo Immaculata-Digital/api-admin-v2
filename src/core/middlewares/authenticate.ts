@@ -62,7 +62,10 @@ const PUBLIC_ROUTES = [
 const isPublicRoute = (path: string): boolean => {
   // Remove query string e normaliza o path
   const pathWithoutQuery = path.split('?')[0]
+  if (!pathWithoutQuery) return false
+  
   const normalizedPath = pathWithoutQuery.startsWith('/') ? pathWithoutQuery : `/${pathWithoutQuery}`
+  if (!normalizedPath) return false
   
   // Verifica rotas exatas primeiro (sem /api porque já foi removido)
   const routesWithoutApi = PUBLIC_ROUTES.map(route => route.replace('/api', ''))

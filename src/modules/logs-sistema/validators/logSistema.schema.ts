@@ -7,10 +7,10 @@ export const createLogSistemaSchema = z.object({
   id_registro: z.number().int().positive().nullable().optional(),
   usuario_id: z.number().int().positive().nullable().optional(),
   mensagem: z.string().min(1, 'Mensagem é obrigatória'),
-  dados_antes: z.record(z.any()).nullable().optional(),
-  dados_depois: z.record(z.any()).nullable().optional(),
+  dados_antes: z.record(z.string(), z.any()).nullable().optional(),
+  dados_depois: z.record(z.string(), z.any()).nullable().optional(),
   ip_origem: z.string().max(45).nullable().optional(),
   user_agent: z.string().nullable().optional(),
-  dados_extras: z.record(z.any()).nullable().optional(),
+  dados_extras: z.record(z.string(), z.any()).nullable().optional(),
 })
 

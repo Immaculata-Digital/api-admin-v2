@@ -9,7 +9,10 @@ import { AppError } from '../errors/AppError'
 const isPublicRoute = (path: string): boolean => {
   // Remove query string e normaliza o path
   const pathWithoutQuery = path.split('?')[0]
+  if (!pathWithoutQuery) return false
+  
   const normalizedPath = pathWithoutQuery.startsWith('/') ? pathWithoutQuery : `/${pathWithoutQuery}`
+  if (!normalizedPath) return false
   
   // Rotas exatas públicas
   const exactPublicRoutes = [

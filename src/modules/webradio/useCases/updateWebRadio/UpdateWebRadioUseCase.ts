@@ -13,13 +13,14 @@ export class UpdateWebRadioUseCase {
     }
 
     const webradio = WebRadio.restore(existing)
-    webradio.update({
-      nome_audio: data.nome_audio,
-      arquivo_audio_base64: data.arquivo_audio_base64,
-      duracao_segundos: data.duracao_segundos,
-      ordem: data.ordem,
+    const updateData: UpdateWebRadioDTO = {
       usu_altera: data.usu_altera ?? null,
-    })
+    }
+    if (data.nome_audio !== undefined) updateData.nome_audio = data.nome_audio
+    if (data.arquivo_audio_base64 !== undefined) updateData.arquivo_audio_base64 = data.arquivo_audio_base64
+    if (data.duracao_segundos !== undefined) updateData.duracao_segundos = data.duracao_segundos
+    if (data.ordem !== undefined) updateData.ordem = data.ordem
+    webradio.update(updateData)
 
     const updated = await this.webRadioRepository.update(schema, id, webradio.toJSON())
     return updated || existing

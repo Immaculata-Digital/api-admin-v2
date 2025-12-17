@@ -8,6 +8,7 @@ import { UpdateComboUseCase } from '../useCases/updateCombo/UpdateComboUseCase'
 import { DeleteComboUseCase } from '../useCases/deleteCombo/DeleteComboUseCase'
 import { GetComboValuesUseCase } from '../useCases/getComboValues/GetComboValuesUseCase'
 import { createComboSchema, updateComboSchema } from '../validators/combo.schema'
+import type { UpdateComboDTO } from '../dto/UpdateComboDTO'
 
 export class ComboController {
   private readonly listCombos: ListCombosUseCase
@@ -32,7 +33,10 @@ export class ComboController {
       const offset = Number(req.query.offset || 0)
       const search = typeof req.query.search === 'string' ? req.query.search : undefined
 
-      const result = await this.listCombos.execute({ limit, offset, search })
+      const params: { limit: number; offset: number; search?: string } = { limit, offset }
+      if (search !== undefined) params.search = search
+
+      const result = await this.listCombos.execute(params)
       return res.json({ total: result.count, itens: result.rows })
     } catch (error) {
       return next(error)
@@ -85,10 +89,14 @@ export class ComboController {
       const data = parseResult.data
       const usuAltera = req.user?.userId ? parseInt(req.user.userId, 10) : data.usu_altera
 
-      const combo = await this.updateCombo.execute(id, {
-        ...data,
+      const updateData: UpdateComboDTO = {
         usu_altera: usuAltera ?? null,
-      })
+      }
+      if (data.descricao !== undefined) updateData.descricao = data.descricao
+      if (data.chave !== undefined) updateData.chave = data.chave
+      if (data.script !== undefined) updateData.script = data.script
+
+      const combo = await this.updateCombo.execute(id, updateData)
 
       return res.json(combo)
     } catch (error) {
@@ -109,6 +117,9 @@ export class ComboController {
   getValues = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const chave = req.params.chave
+      if (!chave) {
+        throw new AppError('Chave é obrigatória', 400)
+      }
       const values = await this.getComboValues.execute(chave)
       return res.json(values)
     } catch (error) {

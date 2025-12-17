@@ -30,15 +30,16 @@ export class UpdateLojaUseCase {
     }
 
     const loja = Loja.restore(existing)
-    loja.update({
-      nome_loja: data.nome_loja,
-      numero_identificador: data.numero_identificador,
-      nome_responsavel: data.nome_responsavel,
-      telefone_responsavel: data.telefone_responsavel,
-      cnpj: data.cnpj,
-      endereco_completo: data.endereco_completo,
+    const updateData: UpdateLojaDTO = {
       usu_altera: data.usu_altera ?? null,
-    })
+    }
+    if (data.nome_loja !== undefined) updateData.nome_loja = data.nome_loja
+    if (data.numero_identificador !== undefined) updateData.numero_identificador = data.numero_identificador
+    if (data.nome_responsavel !== undefined) updateData.nome_responsavel = data.nome_responsavel
+    if (data.telefone_responsavel !== undefined) updateData.telefone_responsavel = data.telefone_responsavel
+    if (data.cnpj !== undefined) updateData.cnpj = data.cnpj
+    if (data.endereco_completo !== undefined) updateData.endereco_completo = data.endereco_completo
+    loja.update(updateData)
 
     const updated = await this.lojaRepository.update(schema, id, loja.toJSON())
     return updated || existing

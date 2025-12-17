@@ -9,6 +9,8 @@ import { UpdateWebRadioUseCase } from '../useCases/updateWebRadio/UpdateWebRadio
 import { DeleteWebRadioUseCase } from '../useCases/deleteWebRadio/DeleteWebRadioUseCase'
 import { ReorderWebRadiosUseCase } from '../useCases/reorderWebRadios/ReorderWebRadiosUseCase'
 import { createWebRadioSchema, updateWebRadioSchema, reorderWebRadioSchema } from '../validators/webRadio.schema'
+import type { CreateWebRadioDTO } from '../dto/CreateWebRadioDTO'
+import type { UpdateWebRadioDTO } from '../dto/UpdateWebRadioDTO'
 
 export class WebRadioController {
   private readonly listWebRadios: ListWebRadiosUseCase
@@ -36,7 +38,10 @@ export class WebRadioController {
       const offset = Number(req.query.offset || 0)
       const search = typeof req.query.search === 'string' ? req.query.search : undefined
 
-      const result = await this.listWebRadios.execute(schema, { limit, offset, search })
+      const params: { limit: number; offset: number; search?: string } = { limit, offset }
+      if (search !== undefined) params.search = search
+
+      const result = await this.listWebRadios.execute(schema, params)
       return res.json({ total: result.count, itens: result.rows })
     } catch (error) {
       return next(error)
@@ -83,10 +88,21 @@ export class WebRadioController {
         throw new AppError('usu_cadastro obrigatório e deve ser > 0', 400)
       }
 
-      const webradio = await this.createWebRadio.execute(schema, {
-        ...data,
+      const createData: CreateWebRadioDTO & { usu_cadastro: number } = {
+        nome_audio: data.nome_audio,
         usu_cadastro: usuCadastro,
-      })
+      }
+      if (data.arquivo_audio_base64 !== undefined) {
+        createData.arquivo_audio_base64 = data.arquivo_audio_base64
+      }
+      if (data.duracao_segundos !== undefined) {
+        createData.duracao_segundos = data.duracao_segundos
+      }
+      if (data.ordem !== undefined) {
+        createData.ordem = data.ordem
+      }
+
+      const webradio = await this.createWebRadio.execute(schema, createData)
 
       return res.status(201).json(webradio)
     } catch (error) {
@@ -106,10 +122,15 @@ export class WebRadioController {
       const data = parseResult.data
       const usuAltera = req.user?.userId ? parseInt(req.user.userId, 10) : data.usu_altera
 
-      const webradio = await this.updateWebRadio.execute(schema, id, {
-        ...data,
+      const updateData: UpdateWebRadioDTO = {
         usu_altera: usuAltera ?? null,
-      })
+      }
+      if (data.nome_audio !== undefined) updateData.nome_audio = data.nome_audio
+      if (data.arquivo_audio_base64 !== undefined) updateData.arquivo_audio_base64 = data.arquivo_audio_base64
+      if (data.duracao_segundos !== undefined) updateData.duracao_segundos = data.duracao_segundos
+      if (data.ordem !== undefined) updateData.ordem = data.ordem
+
+      const webradio = await this.updateWebRadio.execute(schema, id, updateData)
 
       return res.json(webradio)
     } catch (error) {

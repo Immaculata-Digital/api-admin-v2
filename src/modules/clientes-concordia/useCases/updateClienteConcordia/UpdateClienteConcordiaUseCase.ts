@@ -13,14 +13,15 @@ export class UpdateClienteConcordiaUseCase {
     }
 
     const cliente = ClienteConcordia.restore(existing)
-    cliente.update({
-      nome: data.nome,
-      email: data.email,
-      whatsapp: data.whatsapp,
-      schema: data.schema,
-      ativo: data.ativo,
+    const updateData: UpdateClienteConcordiaDTO = {
       usu_altera: data.usu_altera ?? null,
-    })
+    }
+    if (data.nome !== undefined) updateData.nome = data.nome
+    if (data.email !== undefined) updateData.email = data.email
+    if (data.whatsapp !== undefined) updateData.whatsapp = data.whatsapp
+    if (data.schema !== undefined) updateData.schema = data.schema
+    if (data.ativo !== undefined) updateData.ativo = data.ativo
+    cliente.update(updateData)
 
     const updated = await this.clienteConcordiaRepository.update(id, cliente.toJSON())
     return updated || existing

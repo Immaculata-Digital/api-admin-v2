@@ -10,7 +10,7 @@ export class CreateWebRadioUseCase {
       nome_audio: data.nome_audio,
       arquivo_audio_base64: data.arquivo_audio_base64 ?? null,
       duracao_segundos: data.duracao_segundos ?? null,
-      ordem: data.ordem,
+      ordem: data.ordem ?? 1,
       usu_cadastro: data.usu_cadastro ?? 0,
     })
 

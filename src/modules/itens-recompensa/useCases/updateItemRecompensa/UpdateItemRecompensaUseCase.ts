@@ -17,14 +17,15 @@ export class UpdateItemRecompensaUseCase {
     }
 
     const item = ItemRecompensa.restore(existing)
-    item.update({
-      nome_item: data.nome_item,
-      descricao: data.descricao,
-      quantidade_pontos: data.quantidade_pontos,
-      imagem_item: data.imagem_item,
-      nao_retirar_loja: data.nao_retirar_loja,
+    const updateData: UpdateItemRecompensaDTO = {
       usu_altera: data.usu_altera ?? null,
-    })
+    }
+    if (data.nome_item !== undefined) updateData.nome_item = data.nome_item
+    if (data.descricao !== undefined) updateData.descricao = data.descricao
+    if (data.quantidade_pontos !== undefined) updateData.quantidade_pontos = data.quantidade_pontos
+    if (data.imagem_item !== undefined) updateData.imagem_item = data.imagem_item
+    if (data.nao_retirar_loja !== undefined) updateData.nao_retirar_loja = data.nao_retirar_loja
+    item.update(updateData)
 
     const updated = await this.itemRecompensaRepository.update(schema, id, item.toJSON())
     return updated || existing

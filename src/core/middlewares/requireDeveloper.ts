@@ -1,13 +1,10 @@
 import type { Request, Response, NextFunction } from 'express'
+import type { AuthTokenPayload } from '../utils/jwt'
 
 declare global {
   namespace Express {
     interface Request {
-      user?: {
-        id: string
-        role?: string
-        [key: string]: any
-      }
+      user?: AuthTokenPayload
     }
   }
 }

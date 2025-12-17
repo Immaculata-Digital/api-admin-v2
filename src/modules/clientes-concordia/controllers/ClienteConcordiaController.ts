@@ -8,6 +8,8 @@ import { CreateClienteConcordiaUseCase } from '../useCases/createClienteConcordi
 import { UpdateClienteConcordiaUseCase } from '../useCases/updateClienteConcordia/UpdateClienteConcordiaUseCase'
 import { DeleteClienteConcordiaUseCase } from '../useCases/deleteClienteConcordia/DeleteClienteConcordiaUseCase'
 import { createClienteConcordiaSchema, updateClienteConcordiaSchema } from '../validators/clienteConcordia.schema'
+import type { CreateClienteConcordiaDTO } from '../dto/CreateClienteConcordiaDTO'
+import type { UpdateClienteConcordiaDTO } from '../dto/UpdateClienteConcordiaDTO'
 
 export class ClienteConcordiaController {
   private readonly listClientesConcordia: ListClientesConcordiaUseCase
@@ -34,7 +36,12 @@ export class ClienteConcordiaController {
       const schema = typeof req.query.schema === 'string' ? req.query.schema : undefined
       const ativo = req.query.ativo === 'true' ? true : req.query.ativo === 'false' ? false : undefined
 
-      const result = await this.listClientesConcordia.execute({ limit, offset, search, schema, ativo })
+      const params: { limit: number; offset: number; search?: string; schema?: string; ativo?: boolean } = { limit, offset }
+      if (search !== undefined) params.search = search
+      if (schema !== undefined) params.schema = schema
+      if (ativo !== undefined) params.ativo = ativo
+
+      const result = await this.listClientesConcordia.execute(params)
       return res.json({ total: result.count, itens: result.rows })
     } catch (error) {
       return next(error)
@@ -54,6 +61,9 @@ export class ClienteConcordiaController {
   getBySchema = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const schema = req.params.schema
+      if (!schema) {
+        throw new AppError('Schema é obrigatório', 400)
+      }
       const cliente = await this.getClienteConcordiaBySchema.execute(schema)
       if (!cliente) {
         return res.status(404).json({ message: 'Cliente não encontrado para este schema' })
@@ -78,10 +88,18 @@ export class ClienteConcordiaController {
         throw new AppError('usu_cadastro obrigatório e deve ser > 0', 400)
       }
 
-      const cliente = await this.createClienteConcordia.execute({
-        ...data,
+      const createData: CreateClienteConcordiaDTO & { usu_cadastro: number } = {
+        nome: data.nome,
+        email: data.email,
+        whatsapp: data.whatsapp,
+        schema: data.schema,
         usu_cadastro: usuCadastro,
-      })
+      }
+      if (data.ativo !== undefined) {
+        createData.ativo = data.ativo
+      }
+
+      const cliente = await this.createClienteConcordia.execute(createData)
 
       return res.status(201).json(cliente)
     } catch (error) {
@@ -100,10 +118,16 @@ export class ClienteConcordiaController {
       const data = parseResult.data
       const usuAltera = req.user?.userId ? parseInt(req.user.userId, 10) : data.usu_altera
 
-      const cliente = await this.updateClienteConcordia.execute(id, {
-        ...data,
+      const updateData: { nome?: string; email?: string; whatsapp?: string; schema?: string; ativo?: boolean; usu_altera: number | null } = {
         usu_altera: usuAltera ?? null,
-      })
+      }
+      if (data.nome !== undefined) updateData.nome = data.nome
+      if (data.email !== undefined) updateData.email = data.email
+      if (data.whatsapp !== undefined) updateData.whatsapp = data.whatsapp
+      if (data.schema !== undefined) updateData.schema = data.schema
+      if (data.ativo !== undefined) updateData.ativo = data.ativo
+
+      const cliente = await this.updateClienteConcordia.execute(id, updateData)
 
       return res.json(cliente)
     } catch (error) {

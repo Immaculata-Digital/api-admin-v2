@@ -7,6 +7,7 @@ import { CreateLojaUseCase } from '../useCases/createLoja/CreateLojaUseCase'
 import { UpdateLojaUseCase } from '../useCases/updateLoja/UpdateLojaUseCase'
 import { DeleteLojaUseCase } from '../useCases/deleteLoja/DeleteLojaUseCase'
 import { createLojaSchema, updateLojaSchema } from '../validators/loja.schema'
+import type { UpdateLojaDTO } from '../dto/UpdateLojaDTO'
 
 export class LojaController {
   private readonly listLojas: ListLojasUseCase
@@ -30,7 +31,10 @@ export class LojaController {
       const offset = Number(req.query.offset || 0)
       const search = typeof req.query.search === 'string' ? req.query.search : undefined
 
-      const result = await this.listLojas.execute(schema, { limit, offset, search })
+      const params: { limit: number; offset: number; search?: string } = { limit, offset }
+      if (search !== undefined) params.search = search
+
+      const result = await this.listLojas.execute(schema, params)
       return res.json({ total: result.count, itens: result.rows })
     } catch (error) {
       return next(error)
@@ -86,10 +90,17 @@ export class LojaController {
       const data = parseResult.data
       const usuAltera = req.user?.userId ? parseInt(req.user.userId, 10) : data.usu_altera
 
-      const loja = await this.updateLoja.execute(schema, id, {
-        ...data,
+      const updateData: UpdateLojaDTO = {
         usu_altera: usuAltera ?? null,
-      })
+      }
+      if (data.nome_loja !== undefined) updateData.nome_loja = data.nome_loja
+      if (data.numero_identificador !== undefined) updateData.numero_identificador = data.numero_identificador
+      if (data.nome_responsavel !== undefined) updateData.nome_responsavel = data.nome_responsavel
+      if (data.telefone_responsavel !== undefined) updateData.telefone_responsavel = data.telefone_responsavel
+      if (data.cnpj !== undefined) updateData.cnpj = data.cnpj
+      if (data.endereco_completo !== undefined) updateData.endereco_completo = data.endereco_completo
+
+      const loja = await this.updateLoja.execute(schema, id, updateData)
 
       return res.json(loja)
     } catch (error) {

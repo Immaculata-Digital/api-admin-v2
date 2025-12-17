@@ -22,6 +22,9 @@ export class SchemaController {
   checkExists = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { schemaName } = req.params
+      if (!schemaName) {
+        throw new AppError('Nome do schema é obrigatório', 400)
+      }
       const exists = await this.schemaService.checkSchemaExists(schemaName)
       return res.json({ exists })
     } catch (error) {

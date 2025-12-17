@@ -7,6 +7,8 @@ import { CreateItemRecompensaUseCase } from '../useCases/createItemRecompensa/Cr
 import { UpdateItemRecompensaUseCase } from '../useCases/updateItemRecompensa/UpdateItemRecompensaUseCase'
 import { DeleteItemRecompensaUseCase } from '../useCases/deleteItemRecompensa/DeleteItemRecompensaUseCase'
 import { createItemRecompensaSchema, updateItemRecompensaSchema } from '../validators/itemRecompensa.schema'
+import type { CreateItemRecompensaDTO } from '../dto/CreateItemRecompensaDTO'
+import type { UpdateItemRecompensaDTO } from '../dto/UpdateItemRecompensaDTO'
 
 export class ItemRecompensaController {
   private readonly listItensRecompensa: ListItensRecompensaUseCase
@@ -30,7 +32,10 @@ export class ItemRecompensaController {
       const offset = Number(req.query.offset || 0)
       const search = typeof req.query.search === 'string' ? req.query.search : undefined
 
-      const result = await this.listItensRecompensa.execute(schema, { limit, offset, search })
+      const params: { limit: number; offset: number; search?: string } = { limit, offset }
+      if (search !== undefined) params.search = search
+
+      const result = await this.listItensRecompensa.execute(schema, params)
       return res.json({ total: result.count, itens: result.rows })
     } catch (error) {
       return next(error)
@@ -63,10 +68,20 @@ export class ItemRecompensaController {
         throw new AppError('usu_cadastro obrigatório e deve ser > 0', 400)
       }
 
-      const item = await this.createItemRecompensa.execute(schema, {
-        ...data,
+      const createData: CreateItemRecompensaDTO & { usu_cadastro: number } = {
+        nome_item: data.nome_item,
+        descricao: data.descricao,
+        quantidade_pontos: data.quantidade_pontos,
         usu_cadastro: usuCadastro,
-      })
+      }
+      if (data.imagem_item !== undefined) {
+        createData.imagem_item = data.imagem_item
+      }
+      if (data.nao_retirar_loja !== undefined) {
+        createData.nao_retirar_loja = data.nao_retirar_loja
+      }
+
+      const item = await this.createItemRecompensa.execute(schema, createData)
 
       return res.status(201).json(item)
     } catch (error) {
@@ -86,10 +101,16 @@ export class ItemRecompensaController {
       const data = parseResult.data
       const usuAltera = req.user?.userId ? parseInt(req.user.userId, 10) : data.usu_altera
 
-      const item = await this.updateItemRecompensa.execute(schema, id, {
-        ...data,
+      const updateData: UpdateItemRecompensaDTO = {
         usu_altera: usuAltera ?? null,
-      })
+      }
+      if (data.nome_item !== undefined) updateData.nome_item = data.nome_item
+      if (data.descricao !== undefined) updateData.descricao = data.descricao
+      if (data.quantidade_pontos !== undefined) updateData.quantidade_pontos = data.quantidade_pontos
+      if (data.imagem_item !== undefined) updateData.imagem_item = data.imagem_item
+      if (data.nao_retirar_loja !== undefined) updateData.nao_retirar_loja = data.nao_retirar_loja
+
+      const item = await this.updateItemRecompensa.execute(schema, id, updateData)
 
       return res.json(item)
     } catch (error) {
