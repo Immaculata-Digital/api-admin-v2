@@ -57,18 +57,24 @@ const PUBLIC_ROUTES = [
 
 /**
  * Verifica se uma rota é pública
- * Nota: O path que chega aqui já tem o prefixo /api removido (porque o middleware é aplicado em /api)
- * Então /api/casona/lojas/1 chega como /casona/lojas/1
+ * Nota: O path que chega aqui pode ter o prefixo /api (req.path não remove automaticamente)
+ * Então /api/casona/lojas/1 pode chegar como /api/casona/lojas/1
+ * Precisamos remover o /api manualmente se presente
  */
 const isPublicRoute = (path: string): boolean => {
   // Remove query string e normaliza o path
   const pathWithoutQuery = path.split('?')[0]
   if (!pathWithoutQuery) return false
   
-  const normalizedPath = pathWithoutQuery.startsWith('/') ? pathWithoutQuery : `/${pathWithoutQuery}`
+  // Remove o prefixo /api se presente (já que o middleware é aplicado em /api)
+  let normalizedPath = pathWithoutQuery.startsWith('/api') 
+    ? pathWithoutQuery.replace(/^\/api/, '') 
+    : pathWithoutQuery
+  
+  normalizedPath = normalizedPath.startsWith('/') ? normalizedPath : `/${normalizedPath}`
   if (!normalizedPath) return false
   
-  // Verifica rotas exatas primeiro (sem /api porque já foi removido)
+  // Verifica rotas exatas primeiro (sem /api)
   const routesWithoutApi = PUBLIC_ROUTES.map(route => route.replace('/api', ''))
   if (routesWithoutApi.some((publicRoute) => normalizedPath === publicRoute || normalizedPath.startsWith(publicRoute))) {
     return true
