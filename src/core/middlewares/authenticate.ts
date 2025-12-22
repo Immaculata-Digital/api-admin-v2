@@ -81,7 +81,7 @@ const isPublicRoute = (path: string): boolean => {
     /^\/[^/]+\/configuracoes-globais/,  // /casona/configuracoes-globais
     /^\/clientes-concordia\/schema\/[^/]+/,  // /clientes-concordia/schema/casona
     /^\/[^/]+\/itens-recompensa/,  // /casona/itens-recompensa
-    /^\/[^/]+\/lojas\/\d+/,  // /casona/lojas/1
+    /^\/[^/]+\/lojas/,  // /casona/lojas (listagem) ou /casona/lojas/1 (com ID)
   ]
   
   return publicPatterns.some((pattern) => pattern.test(normalizedPath))
