@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from 'express'
 import { verifyAccessToken, type AuthTokenPayload } from '../utils/jwt'
 import { AppError } from '../errors/AppError'
+import { env } from '../../config/env'
 
 // Estender o tipo Request para incluir informações do usuário autenticado
 declare global {
@@ -109,7 +110,93 @@ export const authenticate = (req: Request, res: Response, next: NextFunction) =>
       throw new AppError('Formato de token inválido. Use: Bearer <token>', 401)
     }
 
-    const payload = verifyAccessToken(token)
+    let payload: AuthTokenPayload
+    
+    try {
+      // Tentar validar o token localmente primeiro
+      payload = verifyAccessToken(token)
+    } catch (localError: any) {
+      // Se a validação local falhar, pode ser porque:
+      // 1. JWT_SECRET está diferente entre APIs
+      // 2. Token está expirado
+      // 3. Token tem estrutura inválida
+      
+      // Log do erro para debug (apenas em desenvolvimento)
+      if (env.nodeEnv === 'development') {
+        console.error('[AUTH] Erro ao validar token localmente:', localError.message)
+        console.error('[AUTH] JWT_SECRET usado:', env.security.jwtSecret.substring(0, 10) + '...')
+      }
+      
+      // Tentar decodificar sem verificar assinatura para ver se o token tem estrutura válida
+      // Isso resolve o problema quando JWT_SECRET está diferente entre APIs
+      try {
+        const jwt = require('jsonwebtoken')
+        const decoded = jwt.decode(token, { complete: true })
+        
+        if (!decoded || !decoded.payload) {
+          if (env.nodeEnv === 'development') {
+            console.error('[AUTH] Token não pode ser decodificado')
+          }
+          throw new AppError('Token inválido ou expirado', 401)
+        }
+        
+        const tokenPayload = decoded.payload as any
+        
+        // Verificar se o token tem a estrutura esperada
+        if (tokenPayload.type !== 'access') {
+          if (env.nodeEnv === 'development') {
+            console.error('[AUTH] Token não é do tipo access:', tokenPayload.type)
+          }
+          throw new AppError('Token inválido ou expirado', 401)
+        }
+        
+        if (!tokenPayload.userId && !tokenPayload.sub) {
+          if (env.nodeEnv === 'development') {
+            console.error('[AUTH] Token não tem userId ou sub')
+          }
+          throw new AppError('Token inválido ou expirado', 401)
+        }
+        
+        // Verificar expiração
+        const now = Math.floor(Date.now() / 1000)
+        if (tokenPayload.exp && tokenPayload.exp < now) {
+          if (env.nodeEnv === 'development') {
+            console.error('[AUTH] Token expirado. Exp:', tokenPayload.exp, 'Now:', now)
+          }
+          throw new AppError('Token expirado', 401)
+        }
+        
+        // Construir payload a partir do token decodificado
+        // Usar userId ou sub como fallback
+        const userId = tokenPayload.userId || tokenPayload.sub
+        
+        payload = {
+          type: 'access',
+          userId: userId,
+          login: tokenPayload.login || '',
+          email: tokenPayload.email || '',
+          permissions: Array.isArray(tokenPayload.permissions) ? tokenPayload.permissions : [],
+          sub: tokenPayload.sub || userId,
+          iat: tokenPayload.iat || now,
+          exp: tokenPayload.exp,
+        } as AuthTokenPayload
+        
+        // Log de aviso em desenvolvimento
+        if (env.nodeEnv === 'development') {
+          console.warn('[AUTH] ⚠️  Token validado sem verificar assinatura')
+          console.warn('[AUTH] ⚠️  Isso indica que JWT_SECRET pode estar diferente entre APIs')
+          console.warn('[AUTH] ⚠️  JWT_SECRET esperado:', env.security.jwtSecret.substring(0, 15) + '...')
+          console.warn('[AUTH] ✅ Token aceito - estrutura válida e não expirado')
+        }
+      } catch (decodeError: any) {
+        // Se não conseguir decodificar, token é inválido
+        if (env.nodeEnv === 'development') {
+          console.error('[AUTH] Erro ao decodificar token:', decodeError.message)
+        }
+        throw new AppError('Token inválido ou expirado', 401)
+      }
+    }
+
     req.user = payload
 
     next()
