@@ -43,7 +43,16 @@ export class SchemaService {
     }
   }
 
-  async createSchema(schemaName: string): Promise<SchemaResponse> {
+  async createSchema(
+    schemaName: string,
+    clienteConcordiaData?: {
+      nome: string
+      email: string
+      whatsapp: string
+      usu_cadastro: number
+      ativo?: boolean
+    }
+  ): Promise<SchemaResponse> {
     if (!this.isValidSchemaName(schemaName)) {
       return {
         success: false,
@@ -63,6 +72,8 @@ export class SchemaService {
 
     const client = await pool.connect()
     try {
+      await client.query('BEGIN')
+      
       await client.query(`CREATE SCHEMA IF NOT EXISTS "${schemaName}"`)
       
       // Registrar na tabela schemas
@@ -73,12 +84,39 @@ export class SchemaService {
         [schemaName]
       )
 
+      // Se dados do cliente concordia foram fornecidos, popular a tabela
+      if (clienteConcordiaData) {
+        // Verificar se já existe registro para este schema
+        const existing = await client.query(
+          `SELECT 1 FROM clientes_concordia WHERE schema = $1`,
+          [schemaName]
+        )
+        
+        if (existing.rows.length === 0) {
+          await client.query(
+            `INSERT INTO clientes_concordia (nome, email, whatsapp, schema, ativo, usu_cadastro, dt_cadastro)
+             VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
+            [
+              clienteConcordiaData.nome,
+              clienteConcordiaData.email,
+              clienteConcordiaData.whatsapp,
+              schemaName,
+              clienteConcordiaData.ativo ?? true,
+              clienteConcordiaData.usu_cadastro,
+            ]
+          )
+        }
+      }
+
+      await client.query('COMMIT')
+
       return {
         success: true,
         message: `SUCESSO: Schema "${schemaName}" criado.`,
         schemaName,
       }
     } catch (error) {
+      await client.query('ROLLBACK')
       return {
         success: false,
         message: `Erro interno: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
@@ -125,7 +163,16 @@ export class SchemaService {
     }
   }
 
-  async createCompleteTenant(schemaName: string): Promise<SchemaResponse> {
+  async createCompleteTenant(
+    schemaName: string,
+    clienteConcordiaData?: {
+      nome: string
+      email: string
+      whatsapp: string
+      usu_cadastro: number
+      ativo?: boolean
+    }
+  ): Promise<SchemaResponse> {
     if (!this.isValidSchemaName(schemaName)) {
       return {
         success: false,
@@ -143,8 +190,8 @@ export class SchemaService {
       }
     }
 
-    // Criar schema primeiro
-    const schemaResult = await this.createSchema(schemaName)
+    // Criar schema primeiro (já popula schemas e clientes_concordia se dados fornecidos)
+    const schemaResult = await this.createSchema(schemaName, clienteConcordiaData)
     if (!schemaResult.success) {
       return schemaResult
     }
