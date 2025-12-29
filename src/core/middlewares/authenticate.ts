@@ -50,9 +50,8 @@ const PUBLIC_ROUTES = [
   // Rotas públicas para itens de recompensa
   '/itens-recompensa',
   '/api/itens-recompensa',
-  // Rotas públicas para lojas (para validação de id_loja)
-  '/lojas',
-  '/api/lojas',
+  // Rotas públicas para lojas foram removidas - agora todas precisam de autenticação
+  // GET pode ser público se necessário, mas POST/PUT/DELETE sempre precisam de autenticação
 ]
 
 /**
@@ -87,7 +86,7 @@ const isPublicRoute = (path: string): boolean => {
     /^\/[^/]+\/configuracoes-globais/,  // /casona/configuracoes-globais
     /^\/clientes-concordia\/schema\/[^/]+/,  // /clientes-concordia/schema/casona
     /^\/[^/]+\/itens-recompensa/,  // /casona/itens-recompensa
-    /^\/[^/]+\/lojas/,  // /casona/lojas (listagem) ou /casona/lojas/1 (com ID)
+    // Rotas de lojas foram removidas - todas precisam de autenticação agora
   ]
   
   return publicPatterns.some((pattern) => pattern.test(normalizedPath))
@@ -99,6 +98,13 @@ const isPublicRoute = (path: string): boolean => {
  */
 export const authenticate = (req: Request, res: Response, next: NextFunction) => {
   try {
+    // Log em desenvolvimento para debug
+    if (env.nodeEnv === 'development') {
+      console.log('[AUTH] Rota:', req.method, req.path)
+      console.log('[AUTH] É rota pública?', isPublicRoute(req.path))
+      console.log('[AUTH] Authorization header:', req.headers.authorization ? 'Presente' : 'Ausente')
+    }
+    
     // Se for uma rota pública, permite o acesso sem autenticação
     if (isPublicRoute(req.path)) {
       return next()
@@ -107,6 +113,9 @@ export const authenticate = (req: Request, res: Response, next: NextFunction) =>
     const authHeader = req.headers.authorization
 
     if (!authHeader) {
+      if (env.nodeEnv === 'development') {
+        console.error('[AUTH] ❌ Token de autenticação não fornecido para rota:', req.method, req.path)
+      }
       throw new AppError('Token de autenticação não fornecido', 401)
     }
 
