@@ -61,10 +61,28 @@ export class LojaController {
       }
 
       const data = parseResult.data
-      const usuCadastro = req.user?.userId ? parseInt(req.user.userId, 10) : data.usu_cadastro
+      
+      // Sempre usar o ID do usuário logado
+      if (!req.user) {
+        throw new AppError('Usuário não autenticado', 401)
+      }
 
-      if (!usuCadastro || usuCadastro <= 0) {
-        throw new AppError('usu_cadastro obrigatório e deve ser > 0', 400)
+      // Tentar obter o userId de diferentes formas
+      let usuCadastro: number | undefined
+      
+      if (req.user.userId) {
+        usuCadastro = typeof req.user.userId === 'string' 
+          ? parseInt(req.user.userId, 10) 
+          : Number(req.user.userId)
+      } else if (req.user.sub) {
+        usuCadastro = typeof req.user.sub === 'string'
+          ? parseInt(req.user.sub, 10)
+          : Number(req.user.sub)
+      }
+
+      // Validar se conseguiu obter um ID válido
+      if (!usuCadastro || isNaN(usuCadastro) || usuCadastro <= 0) {
+        throw new AppError('Não foi possível obter o ID do usuário autenticado', 400)
       }
 
       const loja = await this.createLoja.execute(schema, {
