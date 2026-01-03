@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from 'express'
 import { AppError } from '../../../core/errors/AppError'
+import { getUserIdFromRequest } from '../../../core/utils/getUserIdFromRequest'
 import { lojaRepository } from '../repositories'
 import { ListLojasUseCase } from '../useCases/listLojas/ListLojasUseCase'
 import { GetLojaUseCase } from '../useCases/getLoja/GetLojaUseCase'
@@ -61,11 +62,7 @@ export class LojaController {
       }
 
       const data = parseResult.data
-      const usuCadastro = req.user?.userId ? parseInt(req.user.userId, 10) : data.usu_cadastro
-
-      if (!usuCadastro || usuCadastro <= 0) {
-        throw new AppError('usu_cadastro obrigatório e deve ser > 0', 400)
-      }
+      const usuCadastro = getUserIdFromRequest(req)
 
       const loja = await this.createLoja.execute(schema, {
         ...data,
@@ -88,10 +85,10 @@ export class LojaController {
       }
 
       const data = parseResult.data
-      const usuAltera = req.user?.userId ? parseInt(req.user.userId, 10) : data.usu_altera
+      const usuAltera = req.user?.userId ? parseInt(req.user.userId, 10) : null
 
       const updateData: UpdateLojaDTO = {
-        usu_altera: usuAltera ?? null,
+        usu_altera: usuAltera,
       }
       if (data.nome_loja !== undefined) updateData.nome_loja = data.nome_loja
       if (data.numero_identificador !== undefined) updateData.numero_identificador = data.numero_identificador

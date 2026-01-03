@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from 'express'
 import { AppError } from '../../../core/errors/AppError'
+import { getUserIdFromRequest } from '../../../core/utils/getUserIdFromRequest'
 import { itemRecompensaRepository } from '../repositories'
 import { ListItensRecompensaUseCase } from '../useCases/listItensRecompensa/ListItensRecompensaUseCase'
 import { GetItemRecompensaUseCase } from '../useCases/getItemRecompensa/GetItemRecompensaUseCase'
@@ -62,11 +63,7 @@ export class ItemRecompensaController {
       }
 
       const data = parseResult.data
-      const usuCadastro = req.user?.userId ? parseInt(req.user.userId, 10) : data.usu_cadastro
-
-      if (!usuCadastro || usuCadastro <= 0) {
-        throw new AppError('usu_cadastro obrigatório e deve ser > 0', 400)
-      }
+      const usuCadastro = getUserIdFromRequest(req)
 
       const createData: CreateItemRecompensaDTO & { usu_cadastro: number } = {
         nome_item: data.nome_item,

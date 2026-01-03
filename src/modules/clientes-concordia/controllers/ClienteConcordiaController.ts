@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from 'express'
 import { AppError } from '../../../core/errors/AppError'
+import { getUserIdFromRequest } from '../../../core/utils/getUserIdFromRequest'
 import { clienteConcordiaRepository } from '../repositories'
 import { ListClientesConcordiaUseCase } from '../useCases/listClientesConcordia/ListClientesConcordiaUseCase'
 import { GetClienteConcordiaUseCase } from '../useCases/getClienteConcordia/GetClienteConcordiaUseCase'
@@ -82,11 +83,7 @@ export class ClienteConcordiaController {
       }
 
       const data = parseResult.data
-      const usuCadastro = req.user?.userId ? parseInt(req.user.userId, 10) : data.usu_cadastro
-
-      if (!usuCadastro || usuCadastro <= 0) {
-        throw new AppError('usu_cadastro obrigatório e deve ser > 0', 400)
-      }
+      const usuCadastro = getUserIdFromRequest(req)
 
       const createData: CreateClienteConcordiaDTO & { usu_cadastro: number } = {
         nome: data.nome,
