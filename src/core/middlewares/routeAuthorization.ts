@@ -13,6 +13,7 @@ const isPublicRoute = (path: string): boolean => {
   if (!pathWithoutQuery) return false
   
   // Remove o prefixo /api se presente (já que o middleware é aplicado em /api)
+  // req.path pode vir como /thiago/itens-recompensa (sem /api) quando aplicado em /api
   let normalizedPath = pathWithoutQuery.startsWith('/api') 
     ? pathWithoutQuery.replace(/^\/api/, '') 
     : pathWithoutQuery
@@ -36,7 +37,7 @@ const isPublicRoute = (path: string): boolean => {
   const publicPatterns = [
     /^\/[^/]+\/configuracoes-globais/,  // /casona/configuracoes-globais
     /^\/clientes-concordia\/schema\/[^/]+/,  // /clientes-concordia/schema/casona
-    /^\/[^/]+\/itens-recompensa/,  // /casona/itens-recompensa
+    /^\/[^/]+\/itens-recompensa/,  // /casona/itens-recompensa ou /thiago/itens-recompensa
     /^\/[^/]+\/lojas/,  // /casona/lojas (listagem) ou /casona/lojas/1 (com ID)
   ]
   
@@ -50,8 +51,9 @@ const isPublicRoute = (path: string): boolean => {
  */
 export const routeAuthorization = (req: Request, res: Response, next: NextFunction) => {
   try {
-    // Se for uma rota pública, permite o acesso sem verificação
-    if (isPublicRoute(req.path)) {
+    // Se for uma rota pública E método GET (apenas leitura), permite o acesso sem verificação
+    // Métodos POST, PUT, DELETE sempre requerem autenticação
+    if (isPublicRoute(req.path) && req.method === 'GET') {
       return next()
     }
 

@@ -67,16 +67,26 @@ const isPublicRoute = (path: string): boolean => {
   if (!pathWithoutQuery) return false
   
   // Remove o prefixo /api se presente (já que o middleware é aplicado em /api)
+  // req.path pode vir como /thiago/itens-recompensa (sem /api) quando aplicado em /api
   let normalizedPath = pathWithoutQuery.startsWith('/api') 
     ? pathWithoutQuery.replace(/^\/api/, '') 
     : pathWithoutQuery
   
   normalizedPath = normalizedPath.startsWith('/') ? normalizedPath : `/${normalizedPath}`
   if (!normalizedPath) return false
+
+  // Debug em desenvolvimento
+  if (env.nodeEnv === 'development') {
+    console.log('[isPublicRoute] Original path:', path)
+    console.log('[isPublicRoute] Normalized path:', normalizedPath)
+  }
   
   // Verifica rotas exatas primeiro (sem /api)
-  const routesWithoutApi = PUBLIC_ROUTES.map(route => route.replace('/api', ''))
+  const routesWithoutApi = PUBLIC_ROUTES.map(route => route.replace(/^\/api/, ''))
   if (routesWithoutApi.some((publicRoute) => normalizedPath === publicRoute || normalizedPath.startsWith(publicRoute))) {
+    if (env.nodeEnv === 'development') {
+      console.log('[isPublicRoute] ✅ Rota pública encontrada (exata):', normalizedPath)
+    }
     return true
   }
   
@@ -86,11 +96,23 @@ const isPublicRoute = (path: string): boolean => {
   const publicPatterns = [
     /^\/[^/]+\/configuracoes-globais/,  // /casona/configuracoes-globais
     /^\/clientes-concordia\/schema\/[^/]+/,  // /clientes-concordia/schema/casona
-    /^\/[^/]+\/itens-recompensa/,  // /casona/itens-recompensa
+    /^\/[^/]+\/itens-recompensa/,  // /casona/itens-recompensa ou /thiago/itens-recompensa
     /^\/[^/]+\/lojas/,  // /casona/lojas (listagem) ou /casona/lojas/1 (com ID)
   ]
   
-  return publicPatterns.some((pattern) => pattern.test(normalizedPath))
+  const matches = publicPatterns.some((pattern) => {
+    const match = pattern.test(normalizedPath)
+    if (match && env.nodeEnv === 'development') {
+      console.log('[isPublicRoute] ✅ Rota pública encontrada (padrão):', normalizedPath, 'Pattern:', pattern)
+    }
+    return match
+  })
+  
+  if (!matches && env.nodeEnv === 'development') {
+    console.log('[isPublicRoute] ❌ Rota não é pública:', normalizedPath)
+  }
+  
+  return matches
 }
 
 /**
@@ -99,8 +121,9 @@ const isPublicRoute = (path: string): boolean => {
  */
 export const authenticate = (req: Request, res: Response, next: NextFunction) => {
   try {
-    // Se for uma rota pública, permite o acesso sem autenticação
-    if (isPublicRoute(req.path)) {
+    // Se for uma rota pública E método GET (apenas leitura), permite o acesso sem autenticação
+    // Métodos POST, PUT, DELETE sempre requerem autenticação
+    if (isPublicRoute(req.path) && req.method === 'GET') {
       return next()
     }
 
