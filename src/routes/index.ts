@@ -5,7 +5,6 @@ import { comboRoutes } from '../modules/combos/routes/combo.routes'
 import { itemRecompensaRoutes } from '../modules/itens-recompensa/routes/itemRecompensa.routes'
 import { webRadioRoutes } from '../modules/webradio/routes/webRadio.routes'
 import { logSistemaRoutes } from '../modules/logs-sistema/routes/logSistema.routes'
-import { clienteConcordiaRoutes } from '../modules/clientes-concordia/routes/clienteConcordia.routes'
 import { dashboardRoutes } from '../modules/dashboard/routes/dashboard.routes'
 import { schemaRoutes } from '../modules/schema/routes/schema.routes'
 
@@ -23,7 +22,6 @@ router.use(comboRoutes)
 router.use(itemRecompensaRoutes)
 router.use(webRadioRoutes)
 router.use(logSistemaRoutes)
-router.use(clienteConcordiaRoutes)
 router.use(dashboardRoutes)
 router.use(schemaRoutes)
 

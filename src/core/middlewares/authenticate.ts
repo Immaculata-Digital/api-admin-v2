@@ -44,9 +44,6 @@ const PUBLIC_ROUTES = [
   // Rotas públicas para configurações globais
   '/configuracoes-globais',
   '/api/configuracoes-globais',
-  // Rotas públicas para clientes concordia
-  '/clientes-concordia/schema',
-  '/api/clientes-concordia/schema',
   // Rotas públicas para itens de recompensa
   '/itens-recompensa',
   '/api/itens-recompensa',
@@ -95,7 +92,6 @@ const isPublicRoute = (path: string): boolean => {
   // Ex: /casona/configuracoes-globais, /casona/itens-recompensa, etc.
   const publicPatterns = [
     /^\/[^/]+\/configuracoes-globais/,  // /casona/configuracoes-globais
-    /^\/clientes-concordia\/schema\/[^/]+/,  // /clientes-concordia/schema/casona
     /^\/[^/]+\/itens-recompensa/,  // /casona/itens-recompensa ou /thiago/itens-recompensa
     /^\/[^/]+\/lojas/,  // /casona/lojas (listagem) ou /casona/lojas/1 (com ID)
   ]
