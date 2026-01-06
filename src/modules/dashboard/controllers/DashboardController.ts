@@ -12,26 +12,28 @@ export class DashboardController {
     try {
       const schema = req.schema!
       const lojaIdParam = req.query.idLoja as string | undefined
-      let lojaId: number | undefined
+      let lojaIds: number[] | undefined
 
+      // Se idLoja foi passado como parâmetro, usar ele (pode ser múltiplos separados por vírgula)
       if (lojaIdParam) {
-        const parsed = Number(lojaIdParam)
-        if (Number.isNaN(parsed) || parsed <= 0) {
+        const parsedIds = lojaIdParam.split(',').map(id => Number(id.trim())).filter(id => !Number.isNaN(id) && id > 0)
+        if (parsedIds.length > 0) {
+          lojaIds = parsedIds
+        } else {
           return res.status(400).json({ message: 'Parâmetro idLoja inválido' })
         }
-        lojaId = parsed
       }
 
-      // Se o usuário estiver autenticado, tentar obter a loja dele
-      if (req.user?.userId) {
-        const userId = parseInt(req.user.userId, 10)
-        const lojaDoGestor = await this.dashboardService.getLojaIdForUserInSchema(userId, schema)
-        if (typeof lojaDoGestor === 'number') {
-          lojaId = lojaDoGestor
+      // Se o usuário estiver autenticado, buscar lojas gestoras dele
+      if (req.user?.userId && !lojaIds) {
+        const userId = req.user.userId // userId é UUID (string)
+        const lojasGestoras = await this.dashboardService.getLojasGestorasForUserInSchema(userId, schema)
+        if (lojasGestoras.length > 0) {
+          lojaIds = lojasGestoras
         }
       }
 
-      const data = await this.dashboardService.getDashboardData(schema, lojaId)
+      const data = await this.dashboardService.getDashboardData(schema, lojaIds)
       return res.json(data)
     } catch (error) {
       return next(error)
