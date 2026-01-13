@@ -10,4 +10,6 @@ lojaRoutes.get('/:schema/lojas/:id', tenantSchema, lojaController.show)
 lojaRoutes.post('/:schema/lojas', tenantSchema, lojaController.store)
 lojaRoutes.put('/:schema/lojas/:id', tenantSchema, lojaController.update)
 lojaRoutes.delete('/:schema/lojas/:id', tenantSchema, lojaController.destroy)
+lojaRoutes.get('/:schema/lojas/:id/responsaveis', tenantSchema, lojaController.getResponsaveis)
+lojaRoutes.put('/:schema/lojas/:id/responsaveis', tenantSchema, lojaController.updateResponsaveis)
 
