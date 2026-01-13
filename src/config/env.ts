@@ -17,7 +17,7 @@ export const env = {
   },
   security: {
     jwtSecret: process.env.JWT_SECRET ?? 'default-jwt-secret',
-    jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? '2h',
+    jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? '12h',
     cryptoSecret: process.env.CRYPTO_SECRET ?? 'default-crypto-secret',
   },
   apiUsuarios: {

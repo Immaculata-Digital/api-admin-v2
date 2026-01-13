@@ -67,7 +67,7 @@ export const generateAccessToken = (data: {
 
   const options: SignOptions = {
     subject: data.userId,
-    expiresIn: '15m', // Access token expira em 15 minutos
+    expiresIn: '12h', // Access token expira em 12 horas
   }
 
   return jwt.sign(payload, env.security.jwtSecret, options)
