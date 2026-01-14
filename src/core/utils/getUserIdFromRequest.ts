@@ -36,16 +36,19 @@ export function getUserIdFromRequest(req: Request): number {
 
   const userId = parseInt(userIdString, 10)
 
+  // Se não conseguir converter (UUID ou outro formato não numérico), retornar 0
+  // Isso é necessário porque o sistema usa UUIDs para IDs de usuários, mas as tabelas
+  // de tenant usam INTEGER para usu_cadastro. O valor 0 é usado como fallback.
   if (isNaN(userId) || userId <= 0) {
     if (env.nodeEnv === 'development') {
-      console.error('[getUserIdFromRequest] userId inválido:', {
+      console.warn('[getUserIdFromRequest] userId é UUID (não numérico), retornando 0:', {
         userIdString,
         parsed: userId,
         isNaN: isNaN(userId),
         isPositive: userId > 0
       })
     }
-    throw new AppError('ID do usuário inválido no token', 401)
+    return 0
   }
 
   return userId
