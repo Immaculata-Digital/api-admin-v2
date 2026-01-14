@@ -85,9 +85,9 @@ export class WebRadioController {
       const data = parseResult.data
       const usuCadastro = getUserIdFromRequest(req)
 
-      const createData: CreateWebRadioDTO & { usu_cadastro: number } = {
+      const createData: CreateWebRadioDTO & { usu_cadastro: string | null } = {
         nome_audio: data.nome_audio,
-        usu_cadastro: usuCadastro,
+        usu_cadastro: usuCadastro ?? null,
       }
       if (data.arquivo_audio_base64 !== undefined) {
         createData.arquivo_audio_base64 = data.arquivo_audio_base64
@@ -117,7 +117,7 @@ export class WebRadioController {
       }
 
       const data = parseResult.data
-      const usuAltera = req.user?.userId ? parseInt(req.user.userId, 10) : data.usu_altera
+      const usuAltera = getUserIdFromRequest(req) ?? data.usu_altera
 
       const updateData: UpdateWebRadioDTO = {
         usu_altera: usuAltera ?? null,

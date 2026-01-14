@@ -11,7 +11,7 @@ export class CreateWebRadioUseCase {
       arquivo_audio_base64: data.arquivo_audio_base64 ?? null,
       duracao_segundos: data.duracao_segundos ?? null,
       ordem: data.ordem ?? 1,
-      usu_cadastro: data.usu_cadastro ?? 0,
+      usu_cadastro: data.usu_cadastro ?? null,
     })
 
     return await this.webRadioRepository.create(schema, webradio.toJSON())

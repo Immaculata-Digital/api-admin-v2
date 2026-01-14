@@ -11,7 +11,7 @@ export class UpdateConfiguracaoGlobalUseCase {
       throw new AppError('Configuração global não encontrada', 404)
     }
 
-    const updateData: Partial<{ logo_base64: string | null; cor_fundo: string | null; cor_card: string | null; cor_texto_card: string | null; cor_valor_card: string | null; cor_botao: string | null; cor_texto_botao: string | null; fonte_titulos: string | null; fonte_textos: string | null; usu_altera: number | null }> = {
+    const updateData: Partial<{ logo_base64: string | null; cor_fundo: string | null; cor_card: string | null; cor_texto_card: string | null; cor_valor_card: string | null; cor_botao: string | null; cor_texto_botao: string | null; fonte_titulos: string | null; fonte_textos: string | null; usu_altera: string | null }> = {
       usu_altera: data.usu_altera ?? null,
     }
     if (data.logo_base64 !== undefined) updateData.logo_base64 = data.logo_base64

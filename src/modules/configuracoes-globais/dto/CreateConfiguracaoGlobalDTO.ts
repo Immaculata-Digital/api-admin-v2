@@ -8,6 +8,6 @@ export interface CreateConfiguracaoGlobalDTO {
   cor_texto_botao?: string | null
   fonte_titulos?: string | null
   fonte_textos?: string | null
-  usu_cadastro?: number
+  usu_cadastro?: string | null
 }
 

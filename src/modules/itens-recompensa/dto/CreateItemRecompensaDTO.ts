@@ -4,6 +4,6 @@ export interface CreateItemRecompensaDTO {
   quantidade_pontos: number
   imagem_item?: string | null
   nao_retirar_loja?: boolean
-  usu_cadastro?: number
+  usu_cadastro?: string | null
 }
 

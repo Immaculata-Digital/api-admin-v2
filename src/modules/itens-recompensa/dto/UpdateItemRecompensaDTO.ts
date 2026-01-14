@@ -4,6 +4,6 @@ export interface UpdateItemRecompensaDTO {
   quantidade_pontos?: number
   imagem_item?: string | null
   nao_retirar_loja?: boolean
-  usu_altera?: number | null
+  usu_altera?: string | null
 }
 

@@ -4,9 +4,9 @@ export interface ComboProps {
   chave: string
   script: string
   dt_cadastro?: Date
-  usu_cadastro: number
+  usu_cadastro: string | null
   dt_altera?: Date | null
-  usu_altera?: number | null
+  usu_altera?: string | null
 }
 
 export type CreateComboProps = Omit<ComboProps, 'id_combo' | 'dt_cadastro' | 'dt_altera'>
@@ -15,7 +15,7 @@ export type UpdateComboProps = {
   descricao?: string
   chave?: string
   script?: string
-  usu_altera?: number | null
+  usu_altera?: string | null
 }
 
 export class Combo {

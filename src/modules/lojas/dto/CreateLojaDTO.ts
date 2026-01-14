@@ -5,6 +5,6 @@ export interface CreateLojaDTO {
   telefone_responsavel: string
   cnpj: string
   endereco_completo: string
-  usu_cadastro?: number
+  usu_cadastro?: string | null
 }
 

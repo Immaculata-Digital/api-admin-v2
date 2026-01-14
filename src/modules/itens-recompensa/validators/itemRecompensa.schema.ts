@@ -6,7 +6,7 @@ export const createItemRecompensaSchema = z.object({
   quantidade_pontos: z.number().int().positive('Quantidade de pontos deve ser maior que zero'),
   imagem_item: z.string().nullable().optional(),
   nao_retirar_loja: z.boolean().optional(),
-  usu_cadastro: z.number().int().positive().optional(),
+  usu_cadastro: z.string().uuid().nullable().optional(),
 })
 
 export const updateItemRecompensaSchema = z.object({
@@ -15,6 +15,6 @@ export const updateItemRecompensaSchema = z.object({
   quantidade_pontos: z.number().int().positive().optional(),
   imagem_item: z.string().nullable().optional(),
   nao_retirar_loja: z.boolean().optional(),
-  usu_altera: z.number().int().positive().nullable().optional(),
+  usu_altera: z.string().uuid().nullable().optional(),
 })
 

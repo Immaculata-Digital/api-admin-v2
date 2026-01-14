@@ -17,7 +17,7 @@ export class CreateItemRecompensaUseCase {
       quantidade_pontos: data.quantidade_pontos,
       imagem_item: data.imagem_item ?? null,
       nao_retirar_loja: data.nao_retirar_loja ?? false,
-      usu_cadastro: data.usu_cadastro ?? 0,
+      usu_cadastro: data.usu_cadastro ?? null,
     })
 
     return await this.itemRecompensaRepository.create(schema, item.toJSON())

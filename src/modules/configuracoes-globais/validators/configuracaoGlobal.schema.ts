@@ -12,7 +12,7 @@ export const createConfiguracaoGlobalSchema = z.object({
   cor_texto_botao: hexColorSchema,
   fonte_titulos: z.string().max(100).nullable().optional(),
   fonte_textos: z.string().max(100).nullable().optional(),
-  usu_cadastro: z.number().int().positive().optional(),
+  usu_cadastro: z.string().uuid().nullable().optional(),
 })
 
 export const updateConfiguracaoGlobalSchema = z.object({
@@ -25,6 +25,6 @@ export const updateConfiguracaoGlobalSchema = z.object({
   cor_texto_botao: hexColorSchema,
   fonte_titulos: z.string().max(100).nullable().optional(),
   fonte_textos: z.string().max(100).nullable().optional(),
-  usu_altera: z.number().int().positive().nullable().optional(),
+  usu_altera: z.string().uuid().nullable().optional(),
 })
 

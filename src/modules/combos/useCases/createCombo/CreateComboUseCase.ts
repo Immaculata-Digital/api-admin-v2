@@ -16,7 +16,7 @@ export class CreateComboUseCase {
       descricao: data.descricao,
       chave: data.chave,
       script: data.script,
-      usu_cadastro: data.usu_cadastro ?? 0,
+      usu_cadastro: data.usu_cadastro ?? null,
     })
 
     return await this.comboRepository.create(combo.toJSON())

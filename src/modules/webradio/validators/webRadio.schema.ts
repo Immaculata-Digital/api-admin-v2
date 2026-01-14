@@ -5,7 +5,7 @@ export const createWebRadioSchema = z.object({
   arquivo_audio_base64: z.string().nullable().optional(),
   duracao_segundos: z.number().int().positive().nullable().optional(),
   ordem: z.number().int().positive().optional(),
-  usu_cadastro: z.number().int().positive().optional(),
+  usu_cadastro: z.string().uuid().nullable().optional(),
 })
 
 export const updateWebRadioSchema = z.object({
@@ -13,7 +13,7 @@ export const updateWebRadioSchema = z.object({
   arquivo_audio_base64: z.string().nullable().optional(),
   duracao_segundos: z.number().int().positive().nullable().optional(),
   ordem: z.number().int().positive().optional(),
-  usu_altera: z.number().int().positive().nullable().optional(),
+  usu_altera: z.string().uuid().nullable().optional(),
 })
 
 export const reorderWebRadioSchema = z.object({

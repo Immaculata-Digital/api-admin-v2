@@ -5,9 +5,9 @@ export interface WebRadioProps {
   duracao_segundos?: number | null
   ordem: number
   dt_cadastro?: Date
-  usu_cadastro: number
+  usu_cadastro: string | null
   dt_altera?: Date | null
-  usu_altera?: number | null
+  usu_altera?: string | null
 }
 
 export type CreateWebRadioProps = Omit<WebRadioProps, 'id_webradio' | 'dt_cadastro' | 'dt_altera' | 'duracao_segundos'> & {
@@ -19,7 +19,7 @@ export type UpdateWebRadioProps = {
   arquivo_audio_base64?: string | null
   duracao_segundos?: number | null
   ordem?: number
-  usu_altera?: number | null
+  usu_altera?: string | null
 }
 
 export class WebRadio {

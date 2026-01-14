@@ -7,9 +7,9 @@ export interface LojaProps {
   cnpj: string
   endereco_completo: string
   dt_cadastro?: Date
-  usu_cadastro: number
+  usu_cadastro: string | null
   dt_altera?: Date | null
-  usu_altera?: number | null
+  usu_altera?: string | null
 }
 
 export type CreateLojaProps = Omit<LojaProps, 'id_loja' | 'dt_cadastro' | 'dt_altera'>
@@ -21,7 +21,7 @@ export type UpdateLojaProps = {
   telefone_responsavel?: string
   cnpj?: string
   endereco_completo?: string
-  usu_altera?: number | null
+  usu_altera?: string | null
 }
 
 export class Loja {

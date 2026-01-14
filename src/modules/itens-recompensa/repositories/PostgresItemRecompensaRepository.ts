@@ -10,9 +10,9 @@ type ItemRecompensaRow = {
   imagem_item: string | null
   nao_retirar_loja: boolean
   dt_cadastro: Date
-  usu_cadastro: number
+  usu_cadastro: string | null
   dt_altera: Date | null
-  usu_altera: number | null
+  usu_altera: string | null
 }
 
 const mapRowToProps = (row: ItemRecompensaRow): ItemRecompensaProps => ({

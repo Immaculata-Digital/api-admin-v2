@@ -16,7 +16,7 @@ export class CreateConfiguracaoGlobalUseCase {
       cor_texto_botao: data.cor_texto_botao ?? null,
       fonte_titulos: data.fonte_titulos ?? null,
       fonte_textos: data.fonte_textos ?? null,
-      usu_cadastro: data.usu_cadastro ?? 0,
+      usu_cadastro: data.usu_cadastro ?? null,
     })
 
     return await this.configuracaoGlobalRepository.create(schema, config.toJSON())

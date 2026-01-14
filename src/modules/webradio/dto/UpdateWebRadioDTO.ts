@@ -3,6 +3,6 @@ export interface UpdateWebRadioDTO {
   arquivo_audio_base64?: string | null
   duracao_segundos?: number | null
   ordem?: number
-  usu_altera?: number | null
+  usu_altera?: string | null
 }
 

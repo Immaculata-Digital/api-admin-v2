@@ -7,7 +7,7 @@ export const createLojaSchema = z.object({
   telefone_responsavel: z.string().max(20),
   cnpj: z.string().min(1, 'CNPJ é obrigatório').max(18),
   endereco_completo: z.string().min(1, 'Endereço completo é obrigatório').max(500),
-  usu_cadastro: z.number().int().positive().optional(),
+  usu_cadastro: z.string().uuid().nullable().optional(),
 })
 
 export const updateLojaSchema = z.object({
@@ -17,6 +17,6 @@ export const updateLojaSchema = z.object({
   telefone_responsavel: z.string().max(20).optional(),
   cnpj: z.string().min(1).max(18).optional(),
   endereco_completo: z.string().min(1).max(500).optional(),
-  usu_altera: z.number().int().positive().nullable().optional(),
+  usu_altera: z.string().uuid().nullable().optional(),
 })
 

@@ -9,9 +9,9 @@ type WebRadioRow = {
   duracao_segundos: number | null
   ordem: number
   dt_cadastro: Date
-  usu_cadastro: number
+  usu_cadastro: string | null
   dt_altera: Date | null
-  usu_altera: number | null
+  usu_altera: string | null
 }
 
 const mapRowToProps = (row: WebRadioRow): WebRadioProps => ({

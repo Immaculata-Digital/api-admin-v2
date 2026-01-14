@@ -61,8 +61,8 @@ export class ConfiguracaoGlobalController {
       const data = parseResult.data
       const usuCadastro = getUserIdFromRequest(req)
 
-      const createData: CreateConfiguracaoGlobalDTO & { usu_cadastro: number } = {
-        usu_cadastro: usuCadastro,
+      const createData: CreateConfiguracaoGlobalDTO & { usu_cadastro: string | null } = {
+        usu_cadastro: usuCadastro ?? null,
       }
       if (data.logo_base64 !== undefined) createData.logo_base64 = data.logo_base64
       if (data.cor_fundo !== undefined) createData.cor_fundo = data.cor_fundo
@@ -92,7 +92,7 @@ export class ConfiguracaoGlobalController {
       }
 
       const data = parseResult.data
-      const usuAltera = req.user?.userId ? parseInt(req.user.userId, 10) : data.usu_altera
+      const usuAltera = getUserIdFromRequest(req) ?? data.usu_altera
 
       const updateData: UpdateConfiguracaoGlobalDTO = {
         usu_altera: usuAltera ?? null,

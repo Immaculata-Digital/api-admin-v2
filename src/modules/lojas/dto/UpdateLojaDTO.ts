@@ -5,6 +5,6 @@ export interface UpdateLojaDTO {
   telefone_responsavel?: string
   cnpj?: string
   endereco_completo?: string
-  usu_altera?: number | null
+  usu_altera?: string | null
 }
 

@@ -66,7 +66,7 @@ export class ComboController {
 
       const combo = await this.createCombo.execute({
         ...data,
-        usu_cadastro: usuCadastro,
+        usu_cadastro: usuCadastro ?? null,
       })
 
       return res.status(201).json(combo)
@@ -84,7 +84,7 @@ export class ComboController {
       }
 
       const data = parseResult.data
-      const usuAltera = req.user?.userId ? parseInt(req.user.userId, 10) : data.usu_altera
+      const usuAltera = getUserIdFromRequest(req) ?? data.usu_altera
 
       const updateData: UpdateComboDTO = {
         usu_altera: usuAltera ?? null,

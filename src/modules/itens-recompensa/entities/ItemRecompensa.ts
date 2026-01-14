@@ -6,9 +6,9 @@ export interface ItemRecompensaProps {
   imagem_item?: string | null
   nao_retirar_loja: boolean
   dt_cadastro?: Date
-  usu_cadastro: number
+  usu_cadastro: string | null
   dt_altera?: Date | null
-  usu_altera?: number | null
+  usu_altera?: string | null
 }
 
 export type CreateItemRecompensaProps = Omit<ItemRecompensaProps, 'id_item_recompensa' | 'dt_cadastro' | 'dt_altera' | 'nao_retirar_loja'> & {
@@ -21,7 +21,7 @@ export type UpdateItemRecompensaProps = {
   quantidade_pontos?: number
   imagem_item?: string | null
   nao_retirar_loja?: boolean
-  usu_altera?: number | null
+  usu_altera?: string | null
 }
 
 export class ItemRecompensa {

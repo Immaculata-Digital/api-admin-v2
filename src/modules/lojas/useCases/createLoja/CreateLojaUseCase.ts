@@ -29,7 +29,7 @@ export class CreateLojaUseCase {
       telefone_responsavel: data.telefone_responsavel,
       cnpj: data.cnpj,
       endereco_completo: data.endereco_completo,
-      usu_cadastro: data.usu_cadastro ?? 0,
+      usu_cadastro: data.usu_cadastro ?? null,
     })
 
     return await this.lojaRepository.create(schema, loja.toJSON())

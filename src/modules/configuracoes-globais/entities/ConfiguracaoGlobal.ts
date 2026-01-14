@@ -10,9 +10,9 @@ export interface ConfiguracaoGlobalProps {
   fonte_titulos?: string | null
   fonte_textos?: string | null
   dt_cadastro?: Date
-  usu_cadastro: number
+  usu_cadastro: string | null
   dt_altera?: Date | null
-  usu_altera?: number | null
+  usu_altera?: string | null
 }
 
 export type CreateConfiguracaoGlobalProps = Omit<
@@ -30,7 +30,7 @@ export type UpdateConfiguracaoGlobalProps = {
   cor_texto_botao?: string | null
   fonte_titulos?: string | null
   fonte_textos?: string | null
-  usu_altera?: number | null
+  usu_altera?: string | null
 }
 
 export class ConfiguracaoGlobal {

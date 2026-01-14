@@ -15,9 +15,9 @@ type ConfiguracaoGlobalRow = {
   fonte_titulos: string | null
   fonte_textos: string | null
   dt_cadastro: Date
-  usu_cadastro: number
+  usu_cadastro: string | null
   dt_altera: Date | null
-  usu_altera: number | null
+  usu_altera: string | null
 }
 
 const mapRowToProps = (row: ConfiguracaoGlobalRow): ConfiguracaoGlobalProps => ({

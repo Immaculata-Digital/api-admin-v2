@@ -65,11 +65,11 @@ export class ItemRecompensaController {
       const data = parseResult.data
       const usuCadastro = getUserIdFromRequest(req)
 
-      const createData: CreateItemRecompensaDTO & { usu_cadastro: number } = {
+      const createData: CreateItemRecompensaDTO & { usu_cadastro: string | null } = {
         nome_item: data.nome_item,
         descricao: data.descricao,
         quantidade_pontos: data.quantidade_pontos,
-        usu_cadastro: usuCadastro,
+        usu_cadastro: usuCadastro ?? null,
       }
       if (data.imagem_item !== undefined) {
         createData.imagem_item = data.imagem_item
@@ -96,7 +96,7 @@ export class ItemRecompensaController {
       }
 
       const data = parseResult.data
-      const usuAltera = req.user?.userId ? parseInt(req.user.userId, 10) : data.usu_altera
+      const usuAltera = getUserIdFromRequest(req) ?? data.usu_altera
 
       const updateData: UpdateItemRecompensaDTO = {
         usu_altera: usuAltera ?? null,

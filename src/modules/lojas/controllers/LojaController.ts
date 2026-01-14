@@ -68,7 +68,7 @@ export class LojaController {
 
       const loja = await this.createLoja.execute(schema, {
         ...data,
-        usu_cadastro: usuCadastro,
+        usu_cadastro: usuCadastro ?? null,
       })
 
       return res.status(201).json(loja)
@@ -87,10 +87,10 @@ export class LojaController {
       }
 
       const data = parseResult.data
-      const usuAltera = req.user?.userId ? parseInt(req.user.userId, 10) : null
+      const usuAltera = getUserIdFromRequest(req)
 
       const updateData: UpdateLojaDTO = {
-        usu_altera: usuAltera,
+        usu_altera: usuAltera ?? null,
       }
       if (data.nome_loja !== undefined) updateData.nome_loja = data.nome_loja
       if (data.numero_identificador !== undefined) updateData.numero_identificador = data.numero_identificador
