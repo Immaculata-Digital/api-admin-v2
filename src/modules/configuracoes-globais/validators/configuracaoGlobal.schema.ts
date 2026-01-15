@@ -12,7 +12,6 @@ export const createConfiguracaoGlobalSchema = z.object({
   cor_texto_botao: hexColorSchema,
   fonte_titulos: z.string().max(100).nullable().optional(),
   fonte_textos: z.string().max(100).nullable().optional(),
-  usu_cadastro: z.string().uuid().nullable().optional(),
 })
 
 export const updateConfiguracaoGlobalSchema = z.object({
