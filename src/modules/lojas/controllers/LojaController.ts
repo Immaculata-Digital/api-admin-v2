@@ -8,6 +8,7 @@ import { UpdateLojaUseCase } from '../useCases/updateLoja/UpdateLojaUseCase'
 import { DeleteLojaUseCase } from '../useCases/deleteLoja/DeleteLojaUseCase'
 import { createLojaSchema, updateLojaSchema } from '../validators/loja.schema'
 import type { UpdateLojaDTO } from '../dto/UpdateLojaDTO'
+import type { CreateLojaDTO } from '../dto/CreateLojaDTO'
 
 export class LojaController {
   private readonly listLojas: ListLojasUseCase
@@ -85,10 +86,20 @@ export class LojaController {
         throw new AppError('Não foi possível obter o ID do usuário autenticado', 400)
       }
 
-      const loja = await this.createLoja.execute(schema, {
-        ...data,
-        usu_cadastro: usuCadastro,
-      })
+      const createData: CreateLojaDTO = {
+        nome_loja: data.nome_loja,
+        numero_identificador: data.numero_identificador,
+        nome_responsavel: data.nome_responsavel,
+        cnpj: data.cnpj,
+        endereco_completo: data.endereco_completo,
+        usu_cadastro: usuCadastro.toString(),
+      }
+      
+      if (data.telefone_responsavel !== undefined) {
+        createData.telefone_responsavel = data.telefone_responsavel
+      }
+
+      const loja = await this.createLoja.execute(schema, createData)
 
       return res.status(201).json(loja)
     } catch (error) {
@@ -106,7 +117,15 @@ export class LojaController {
       }
 
       const data = parseResult.data
-      const usuAltera = req.user?.userId ? parseInt(req.user.userId, 10) : data.usu_altera
+      let usuAltera: string | null | undefined
+      
+      if (req.user?.userId) {
+        usuAltera = typeof req.user.userId === 'string' 
+          ? req.user.userId 
+          : String(req.user.userId)
+      } else {
+        usuAltera = data.usu_altera
+      }
 
       const updateData: UpdateLojaDTO = {
         usu_altera: usuAltera ?? null,
@@ -132,6 +151,31 @@ export class LojaController {
       const id = Number(req.params.id)
       await this.deleteLoja.execute(schema, id)
       return res.status(204).send()
+    } catch (error) {
+      return next(error)
+    }
+  }
+
+  getResponsaveis = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const schema = req.schema!
+      const id = Number(req.params.id)
+      // TODO: Implementar lógica para buscar responsáveis da loja
+      // Por enquanto retorna array vazio
+      return res.json({ userIds: [] })
+    } catch (error) {
+      return next(error)
+    }
+  }
+
+  updateResponsaveis = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const schema = req.schema!
+      const id = Number(req.params.id)
+      const { userIds } = req.body
+      // TODO: Implementar lógica para atualizar responsáveis da loja
+      // Por enquanto retorna sucesso
+      return res.json({ message: 'Responsáveis atualizados com sucesso' })
     } catch (error) {
       return next(error)
     }

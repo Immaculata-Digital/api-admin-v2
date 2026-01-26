@@ -4,7 +4,7 @@ export const createLojaSchema = z.object({
   nome_loja: z.string().min(1, 'Nome da loja é obrigatório').max(255),
   numero_identificador: z.string().min(1, 'Número identificador é obrigatório').max(50),
   nome_responsavel: z.string().max(255),
-  telefone_responsavel: z.string().max(20),
+  telefone_responsavel: z.string().max(20).optional(),
   cnpj: z.string().min(1, 'CNPJ é obrigatório').max(18),
   endereco_completo: z.string().min(1, 'Endereço completo é obrigatório').max(500),
   usu_cadastro: z.string().uuid().nullable().optional(),

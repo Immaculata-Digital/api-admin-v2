@@ -26,7 +26,7 @@ export class CreateLojaUseCase {
       nome_loja: data.nome_loja,
       numero_identificador: data.numero_identificador,
       nome_responsavel: data.nome_responsavel,
-      telefone_responsavel: data.telefone_responsavel,
+      telefone_responsavel: data.telefone_responsavel ?? '',
       cnpj: data.cnpj,
       endereco_completo: data.endereco_completo,
       usu_cadastro: data.usu_cadastro ?? null,
