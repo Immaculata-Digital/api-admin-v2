@@ -63,27 +63,16 @@ export class LojaController {
 
       const data = parseResult.data
       
-      // Sempre usar o ID do usuário logado
+      // Sempre usar o UUID do usuário logado
       if (!req.user) {
         throw new AppError('Usuário não autenticado', 401)
       }
 
-      // Tentar obter o userId de diferentes formas
-      let usuCadastro: number | undefined
+      // Obter o UUID do usuário (já é string UUID)
+      const usuCadastro = req.user.userId || req.user.sub
       
-      if (req.user.userId) {
-        usuCadastro = typeof req.user.userId === 'string' 
-          ? parseInt(req.user.userId, 10) 
-          : Number(req.user.userId)
-      } else if (req.user.sub) {
-        usuCadastro = typeof req.user.sub === 'string'
-          ? parseInt(req.user.sub, 10)
-          : Number(req.user.sub)
-      }
-
-      // Validar se conseguiu obter um ID válido
-      if (!usuCadastro || isNaN(usuCadastro) || usuCadastro <= 0) {
-        throw new AppError('Não foi possível obter o ID do usuário autenticado', 400)
+      if (!usuCadastro || typeof usuCadastro !== 'string') {
+        throw new AppError('Não foi possível obter o UUID do usuário autenticado', 400)
       }
 
       const createData: CreateLojaDTO = {
@@ -92,7 +81,7 @@ export class LojaController {
         nome_responsavel: data.nome_responsavel,
         cnpj: data.cnpj,
         endereco_completo: data.endereco_completo,
-        usu_cadastro: usuCadastro.toString(),
+        usu_cadastro: usuCadastro,
       }
       
       if (data.telefone_responsavel !== undefined) {
