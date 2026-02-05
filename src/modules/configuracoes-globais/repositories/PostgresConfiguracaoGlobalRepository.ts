@@ -14,6 +14,8 @@ type ConfiguracaoGlobalRow = {
   cor_texto_botao: string | null
   fonte_titulos: string | null
   fonte_textos: string | null
+  arquivo_politica_privacidade: string | null
+  arquivo_termos_uso: string | null
   dt_cadastro: Date
   usu_cadastro: string | null
   dt_altera: Date | null
@@ -31,6 +33,8 @@ const mapRowToProps = (row: ConfiguracaoGlobalRow): ConfiguracaoGlobalProps => (
   cor_texto_botao: row.cor_texto_botao,
   fonte_titulos: row.fonte_titulos,
   fonte_textos: row.fonte_textos,
+  arquivo_politica_privacidade: row.arquivo_politica_privacidade,
+  arquivo_termos_uso: row.arquivo_termos_uso,
   dt_cadastro: row.dt_cadastro,
   usu_cadastro: row.usu_cadastro,
   dt_altera: row.dt_altera,
@@ -78,8 +82,8 @@ export class PostgresConfiguracaoGlobalRepository implements IConfiguracaoGlobal
     try {
       const result = await client.query<ConfiguracaoGlobalRow>(
         `INSERT INTO "${schema}".configuracoes_globais 
-         (logo_base64, cor_fundo, cor_card, cor_texto_card, cor_valor_card, cor_botao, cor_texto_botao, fonte_titulos, fonte_textos, usu_cadastro, dt_cadastro)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
+         (logo_base64, cor_fundo, cor_card, cor_texto_card, cor_valor_card, cor_botao, cor_texto_botao, fonte_titulos, fonte_textos, arquivo_politica_privacidade, arquivo_termos_uso, usu_cadastro, dt_cadastro)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW())
          RETURNING *`,
         [
           data.logo_base64 ?? null,
@@ -91,6 +95,8 @@ export class PostgresConfiguracaoGlobalRepository implements IConfiguracaoGlobal
           data.cor_texto_botao ?? null,
           data.fonte_titulos ?? null,
           data.fonte_textos ?? null,
+          data.arquivo_politica_privacidade ?? null,
+          data.arquivo_termos_uso ?? null,
           data.usu_cadastro,
         ]
       )
@@ -142,6 +148,14 @@ export class PostgresConfiguracaoGlobalRepository implements IConfiguracaoGlobal
       if (typeof data.fonte_textos !== 'undefined') {
         updates.push(`fonte_textos = $${paramIndex++}`)
         values.push(data.fonte_textos ?? null)
+      }
+      if (typeof data.arquivo_politica_privacidade !== 'undefined') {
+        updates.push(`arquivo_politica_privacidade = $${paramIndex++}`)
+        values.push(data.arquivo_politica_privacidade ?? null)
+      }
+      if (typeof data.arquivo_termos_uso !== 'undefined') {
+        updates.push(`arquivo_termos_uso = $${paramIndex++}`)
+        values.push(data.arquivo_termos_uso ?? null)
       }
       if (typeof data.usu_altera !== 'undefined') {
         updates.push(`usu_altera = $${paramIndex++}`)

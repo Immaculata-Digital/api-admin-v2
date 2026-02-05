@@ -73,6 +73,8 @@ export class ConfiguracaoGlobalController {
       if (data.cor_texto_botao !== undefined) createData.cor_texto_botao = data.cor_texto_botao
       if (data.fonte_titulos !== undefined) createData.fonte_titulos = data.fonte_titulos
       if (data.fonte_textos !== undefined) createData.fonte_textos = data.fonte_textos
+      if (data.arquivo_politica_privacidade !== undefined) createData.arquivo_politica_privacidade = data.arquivo_politica_privacidade
+      if (data.arquivo_termos_uso !== undefined) createData.arquivo_termos_uso = data.arquivo_termos_uso
 
       const config = await this.createConfiguracaoGlobal.execute(schema, createData)
 
@@ -106,6 +108,8 @@ export class ConfiguracaoGlobalController {
       if (data.cor_texto_botao !== undefined) updateData.cor_texto_botao = data.cor_texto_botao
       if (data.fonte_titulos !== undefined) updateData.fonte_titulos = data.fonte_titulos
       if (data.fonte_textos !== undefined) updateData.fonte_textos = data.fonte_textos
+      if (data.arquivo_politica_privacidade !== undefined) updateData.arquivo_politica_privacidade = data.arquivo_politica_privacidade
+      if (data.arquivo_termos_uso !== undefined) updateData.arquivo_termos_uso = data.arquivo_termos_uso
 
       const config = await this.updateConfiguracaoGlobal.execute(schema, id, updateData)
 

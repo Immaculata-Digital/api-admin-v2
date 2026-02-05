@@ -3,7 +3,7 @@ import type { CreateConfiguracaoGlobalDTO } from '../../dto/CreateConfiguracaoGl
 import { ConfiguracaoGlobal } from '../../entities/ConfiguracaoGlobal'
 
 export class CreateConfiguracaoGlobalUseCase {
-  constructor(private readonly configuracaoGlobalRepository: IConfiguracaoGlobalRepository) {}
+  constructor(private readonly configuracaoGlobalRepository: IConfiguracaoGlobalRepository) { }
 
   async execute(schema: string, data: CreateConfiguracaoGlobalDTO) {
     const config = ConfiguracaoGlobal.create({
@@ -16,6 +16,8 @@ export class CreateConfiguracaoGlobalUseCase {
       cor_texto_botao: data.cor_texto_botao ?? null,
       fonte_titulos: data.fonte_titulos ?? null,
       fonte_textos: data.fonte_textos ?? null,
+      arquivo_politica_privacidade: data.arquivo_politica_privacidade ?? null,
+      arquivo_termos_uso: data.arquivo_termos_uso ?? null,
       usu_cadastro: data.usu_cadastro ?? null,
     })
 

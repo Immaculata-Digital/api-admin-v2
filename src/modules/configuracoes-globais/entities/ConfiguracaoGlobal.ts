@@ -9,6 +9,8 @@ export interface ConfiguracaoGlobalProps {
   cor_texto_botao?: string | null
   fonte_titulos?: string | null
   fonte_textos?: string | null
+  arquivo_politica_privacidade?: string | null
+  arquivo_termos_uso?: string | null
   dt_cadastro?: Date
   usu_cadastro: string | null
   dt_altera?: Date | null
@@ -30,11 +32,13 @@ export type UpdateConfiguracaoGlobalProps = {
   cor_texto_botao?: string | null
   fonte_titulos?: string | null
   fonte_textos?: string | null
+  arquivo_politica_privacidade?: string | null
+  arquivo_termos_uso?: string | null
   usu_altera?: string | null
 }
 
 export class ConfiguracaoGlobal {
-  private constructor(private props: ConfiguracaoGlobalProps) {}
+  private constructor(private props: ConfiguracaoGlobalProps) { }
 
   static create(data: CreateConfiguracaoGlobalProps) {
     const timestamp = new Date()
@@ -79,6 +83,12 @@ export class ConfiguracaoGlobal {
     }
     if (typeof data.fonte_textos !== 'undefined') {
       nextProps.fonte_textos = data.fonte_textos
+    }
+    if (typeof data.arquivo_politica_privacidade !== 'undefined') {
+      nextProps.arquivo_politica_privacidade = data.arquivo_politica_privacidade
+    }
+    if (typeof data.arquivo_termos_uso !== 'undefined') {
+      nextProps.arquivo_termos_uso = data.arquivo_termos_uso
     }
 
     nextProps.usu_altera = data.usu_altera ?? null
