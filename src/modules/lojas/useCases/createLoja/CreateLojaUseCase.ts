@@ -4,7 +4,7 @@ import type { CreateLojaDTO } from '../../dto/CreateLojaDTO'
 import { Loja } from '../../entities/Loja'
 
 export class CreateLojaUseCase {
-  constructor(private readonly lojaRepository: ILojaRepository) {}
+  constructor(private readonly lojaRepository: ILojaRepository) { }
 
   async execute(schema: string, data: CreateLojaDTO) {
     // Verificar unicidade
@@ -24,6 +24,7 @@ export class CreateLojaUseCase {
 
     const loja = Loja.create({
       nome_loja: data.nome_loja,
+      ...(data.nome_loja_publico ? { nome_loja_publico: data.nome_loja_publico } : {}),
       numero_identificador: data.numero_identificador,
       nome_responsavel: data.nome_responsavel,
       telefone_responsavel: data.telefone_responsavel ?? '',

@@ -62,7 +62,7 @@ export class LojaController {
       }
 
       const data = parseResult.data
-      
+
       // Sempre usar o UUID do usuário logado
       if (!req.user) {
         throw new AppError('Usuário não autenticado', 401)
@@ -70,20 +70,21 @@ export class LojaController {
 
       // Obter o UUID do usuário (já é string UUID)
       const usuCadastro = req.user.userId || req.user.sub
-      
+
       if (!usuCadastro || typeof usuCadastro !== 'string') {
         throw new AppError('Não foi possível obter o UUID do usuário autenticado', 400)
       }
 
       const createData: CreateLojaDTO = {
         nome_loja: data.nome_loja,
+        ...(data.nome_loja_publico ? { nome_loja_publico: data.nome_loja_publico } : {}),
         numero_identificador: data.numero_identificador,
         nome_responsavel: data.nome_responsavel,
         cnpj: data.cnpj,
         endereco_completo: data.endereco_completo,
         usu_cadastro: usuCadastro,
       }
-      
+
       if (data.telefone_responsavel !== undefined) {
         createData.telefone_responsavel = data.telefone_responsavel
       }
@@ -107,10 +108,10 @@ export class LojaController {
 
       const data = parseResult.data
       let usuAltera: string | null | undefined
-      
+
       if (req.user?.userId) {
-        usuAltera = typeof req.user.userId === 'string' 
-          ? req.user.userId 
+        usuAltera = typeof req.user.userId === 'string'
+          ? req.user.userId
           : String(req.user.userId)
       } else {
         usuAltera = data.usu_altera
@@ -120,6 +121,7 @@ export class LojaController {
         usu_altera: usuAltera ?? null,
       }
       if (data.nome_loja !== undefined) updateData.nome_loja = data.nome_loja
+      if (data.nome_loja_publico !== undefined) updateData.nome_loja_publico = data.nome_loja_publico
       if (data.numero_identificador !== undefined) updateData.numero_identificador = data.numero_identificador
       if (data.nome_responsavel !== undefined) updateData.nome_responsavel = data.nome_responsavel
       if (data.telefone_responsavel !== undefined) updateData.telefone_responsavel = data.telefone_responsavel

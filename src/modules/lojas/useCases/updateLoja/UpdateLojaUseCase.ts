@@ -4,7 +4,7 @@ import type { UpdateLojaDTO } from '../../dto/UpdateLojaDTO'
 import { Loja } from '../../entities/Loja'
 
 export class UpdateLojaUseCase {
-  constructor(private readonly lojaRepository: ILojaRepository) {}
+  constructor(private readonly lojaRepository: ILojaRepository) { }
 
   async execute(schema: string, id: number, data: UpdateLojaDTO) {
     const existing = await this.lojaRepository.findById(schema, id)
@@ -34,6 +34,7 @@ export class UpdateLojaUseCase {
       usu_altera: data.usu_altera ?? null,
     }
     if (data.nome_loja !== undefined) updateData.nome_loja = data.nome_loja
+    if (data.nome_loja_publico !== undefined) updateData.nome_loja_publico = data.nome_loja_publico
     if (data.numero_identificador !== undefined) updateData.numero_identificador = data.numero_identificador
     if (data.nome_responsavel !== undefined) updateData.nome_responsavel = data.nome_responsavel
     if (data.telefone_responsavel !== undefined) updateData.telefone_responsavel = data.telefone_responsavel

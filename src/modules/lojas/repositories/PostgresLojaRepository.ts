@@ -5,6 +5,7 @@ import type { ILojaRepository } from './ILojaRepository'
 type LojaRow = {
   id_loja: number
   nome_loja: string
+  nome_loja_publico: string | null
   numero_identificador: string
   nome_responsavel: string
   telefone_responsavel: string
@@ -19,6 +20,7 @@ type LojaRow = {
 const mapRowToProps = (row: LojaRow): LojaProps => ({
   id_loja: row.id_loja,
   nome_loja: row.nome_loja,
+  ...(row.nome_loja_publico ? { nome_loja_publico: row.nome_loja_publico } : {}),
   numero_identificador: row.numero_identificador,
   nome_responsavel: row.nome_responsavel,
   telefone_responsavel: row.telefone_responsavel,
@@ -39,7 +41,7 @@ export class PostgresLojaRepository implements ILojaRepository {
       const params: unknown[] = []
 
       if (filters.search) {
-        const searchCondition = `WHERE nome_loja ILIKE $1 OR numero_identificador ILIKE $1 OR nome_responsavel ILIKE $1 OR cnpj ILIKE $1`
+        const searchCondition = `WHERE nome_loja ILIKE $1 OR nome_loja_publico ILIKE $1 OR numero_identificador ILIKE $1 OR nome_responsavel ILIKE $1 OR cnpj ILIKE $1`
         countQuery += ` ${searchCondition}`
         query += ` ${searchCondition}`
         params.push(`%${filters.search}%`)
@@ -80,11 +82,12 @@ export class PostgresLojaRepository implements ILojaRepository {
     try {
       const result = await client.query<LojaRow>(
         `INSERT INTO "${schema}".lojas 
-         (nome_loja, numero_identificador, nome_responsavel, telefone_responsavel, cnpj, endereco_completo, usu_cadastro, dt_cadastro)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+         (nome_loja, nome_loja_publico, numero_identificador, nome_responsavel, telefone_responsavel, cnpj, endereco_completo, usu_cadastro, dt_cadastro)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
          RETURNING *`,
         [
           data.nome_loja,
+          data.nome_loja_publico || null,
           data.numero_identificador,
           data.nome_responsavel,
           data.telefone_responsavel,
@@ -109,6 +112,10 @@ export class PostgresLojaRepository implements ILojaRepository {
       if (typeof data.nome_loja !== 'undefined') {
         updates.push(`nome_loja = $${paramIndex++}`)
         values.push(data.nome_loja)
+      }
+      if (typeof data.nome_loja_publico !== 'undefined') {
+        updates.push(`nome_loja_publico = $${paramIndex++}`)
+        values.push(data.nome_loja_publico)
       }
       if (typeof data.numero_identificador !== 'undefined') {
         updates.push(`numero_identificador = $${paramIndex++}`)

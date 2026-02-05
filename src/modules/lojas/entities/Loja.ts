@@ -1,6 +1,7 @@
 export interface LojaProps {
   id_loja?: number
   nome_loja: string
+  nome_loja_publico?: string
   numero_identificador: string
   nome_responsavel: string
   telefone_responsavel: string
@@ -16,6 +17,7 @@ export type CreateLojaProps = Omit<LojaProps, 'id_loja' | 'dt_cadastro' | 'dt_al
 
 export type UpdateLojaProps = {
   nome_loja?: string
+  nome_loja_publico?: string
   numero_identificador?: string
   nome_responsavel?: string
   telefone_responsavel?: string
@@ -25,7 +27,7 @@ export type UpdateLojaProps = {
 }
 
 export class Loja {
-  private constructor(private props: LojaProps) {}
+  private constructor(private props: LojaProps) { }
 
   static create(data: CreateLojaProps) {
     const timestamp = new Date()
@@ -46,6 +48,9 @@ export class Loja {
 
     if (typeof data.nome_loja !== 'undefined') {
       nextProps.nome_loja = data.nome_loja
+    }
+    if (typeof data.nome_loja_publico !== 'undefined') {
+      nextProps.nome_loja_publico = data.nome_loja_publico
     }
     if (typeof data.numero_identificador !== 'undefined') {
       nextProps.numero_identificador = data.numero_identificador
