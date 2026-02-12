@@ -209,5 +209,54 @@ export class PostgresLojaRepository implements ILojaRepository {
       client.release()
     }
   }
+
+  async findResponsaveis(schema: string, idLoja: number): Promise<string[]> {
+    const client = await pool.connect()
+    try {
+      const result = await client.query<{ user_id: string }>(
+        `SELECT user_id FROM "${schema}".user_lojas_gestoras WHERE id_loja = $1`,
+        [idLoja]
+      )
+      return result.rows.map(row => row.user_id)
+    } finally {
+      client.release()
+    }
+  }
+
+  async syncResponsaveis(schema: string, idLoja: number, userIds: string[]): Promise<void> {
+    const client = await pool.connect()
+    try {
+      await client.query('BEGIN')
+
+      // Remover vínculos existentes
+      await client.query(
+        `DELETE FROM "${schema}".user_lojas_gestoras WHERE id_loja = $1`,
+        [idLoja]
+      )
+
+      // Inserir novos vínculos
+      if (userIds.length > 0) {
+        const values: string[] = []
+        const params: unknown[] = [idLoja]
+
+        userIds.forEach((userId, index) => {
+          values.push(`($${index + 2}, $1)`) // ($2, $1), ($3, $1), ... onde $1 é idLoja
+          params.push(userId)
+        })
+
+        await client.query(
+          `INSERT INTO "${schema}".user_lojas_gestoras (user_id, id_loja) VALUES ${values.join(', ')}`,
+          params
+        )
+      }
+
+      await client.query('COMMIT')
+    } catch (error) {
+      await client.query('ROLLBACK')
+      throw error
+    } finally {
+      client.release()
+    }
+  }
 }
 

@@ -6,6 +6,8 @@ import { GetLojaUseCase } from '../useCases/getLoja/GetLojaUseCase'
 import { CreateLojaUseCase } from '../useCases/createLoja/CreateLojaUseCase'
 import { UpdateLojaUseCase } from '../useCases/updateLoja/UpdateLojaUseCase'
 import { DeleteLojaUseCase } from '../useCases/deleteLoja/DeleteLojaUseCase'
+import { GetLojaResponsaveisUseCase } from '../useCases/getLojaResponsaveis/GetLojaResponsaveisUseCase'
+import { UpdateLojaResponsaveisUseCase } from '../useCases/updateLojaResponsaveis/UpdateLojaResponsaveisUseCase'
 import { createLojaSchema, updateLojaSchema } from '../validators/loja.schema'
 import type { UpdateLojaDTO } from '../dto/UpdateLojaDTO'
 import type { CreateLojaDTO } from '../dto/CreateLojaDTO'
@@ -151,9 +153,9 @@ export class LojaController {
     try {
       const schema = req.schema!
       const id = Number(req.params.id)
-      // TODO: Implementar lógica para buscar responsáveis da loja
-      // Por enquanto retorna array vazio
-      return res.json({ userIds: [] })
+      const getLojaResponsaveis = new GetLojaResponsaveisUseCase(lojaRepository)
+      const userIds = await getLojaResponsaveis.execute(schema, id)
+      return res.json({ userIds })
     } catch (error) {
       return next(error)
     }
@@ -164,8 +166,14 @@ export class LojaController {
       const schema = req.schema!
       const id = Number(req.params.id)
       const { userIds } = req.body
-      // TODO: Implementar lógica para atualizar responsáveis da loja
-      // Por enquanto retorna sucesso
+
+      if (!Array.isArray(userIds)) {
+        throw new AppError('userIds deve ser um array de strings', 400)
+      }
+
+      const updateLojaResponsaveis = new UpdateLojaResponsaveisUseCase(lojaRepository)
+      await updateLojaResponsaveis.execute(schema, id, userIds)
+
       return res.json({ message: 'Responsáveis atualizados com sucesso' })
     } catch (error) {
       return next(error)
