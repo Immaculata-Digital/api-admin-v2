@@ -25,6 +25,7 @@ export interface DashboardResponse {
   clientes_7d_variacao: number
   pontos_creditados_7d: number
   pontos_resgatados_7d: number
+  itens_resgatados_7d: number
   novos_clientes_7d: DashboardCliente[]
   ultimos_resgates: DashboardResgate[]
 }
@@ -109,6 +110,22 @@ export class DashboardService {
       )
       const pontos_resgatados_7d = parseInt(pontosResgatadosResult.rows[0]?.sum || '0', 10)
 
+      // Itens resgatados nos últimos 7 dias
+      const itensResgatadosCondition = lojaIds && lojaIds.length > 0
+        ? `AND c.id_loja = ANY($1::int[])`
+        : ''
+      const itensResgatadosQuery = `SELECT COUNT(*) as count 
+           FROM "${schema}".cliente_pontos_movimentacao m
+           INNER JOIN "${schema}".clientes c ON m.id_cliente = c.id_cliente
+           WHERE m.tipo = 'DEBITO' 
+             AND m.origem = 'RESGATE'
+             AND m.dt_cadastro >= NOW() - INTERVAL '7 days' ${itensResgatadosCondition}`
+      const itensResgatadosResult = await client.query<{ count: string }>(
+        itensResgatadosQuery,
+        lojaParams
+      )
+      const itens_resgatados_7d = parseInt(itensResgatadosResult.rows[0]?.count || '0', 10)
+
       // Novos clientes dos últimos 7 dias
       const novosClientesCondition = lojaIds && lojaIds.length > 0
         ? `AND c.id_loja = ANY($1::int[])`
@@ -118,7 +135,7 @@ export class DashboardService {
            FROM "${schema}".clientes c
            WHERE c.dt_cadastro >= NOW() - INTERVAL '7 days' ${novosClientesCondition}
            ORDER BY c.dt_cadastro DESC LIMIT 10`
-      
+
       const novosClientesResult = await client.query<DashboardCliente>(
         novosClientesQuery,
         lojaParams
@@ -149,7 +166,7 @@ export class DashboardService {
            WHERE m.tipo = 'DEBITO' 
              AND m.origem = 'RESGATE' ${ultimosResgatesCondition}
            ORDER BY m.dt_cadastro DESC LIMIT 10`
-      
+
       let ultimos_resgates: DashboardResgate[] = []
       try {
         const ultimosResgatesResult = await client.query<DashboardResgate>(
@@ -169,13 +186,14 @@ export class DashboardService {
         clientes_7d_variacao: Math.round(clientes_7d_variacao * 100) / 100,
         pontos_creditados_7d,
         pontos_resgatados_7d,
+        itens_resgatados_7d,
         novos_clientes_7d,
         ultimos_resgates,
       }
     } catch (error: any) {
       // Log do erro para debug
       console.error(`[DashboardService] Erro ao buscar dados do dashboard para schema ${schema}:`, error)
-      
+
       // Se as tabelas não existirem, retornar dados vazios
       // Mas tentar pelo menos buscar total de clientes se a tabela existir
       try {
@@ -189,13 +207,14 @@ export class DashboardService {
           lojaParams
         )
         const clientes_total = parseInt(totalResult.rows[0]?.count || '0', 10)
-        
+
         return {
           clientes_total,
           clientes_7d: 0,
           clientes_7d_variacao: 0,
           pontos_creditados_7d: 0,
           pontos_resgatados_7d: 0,
+          itens_resgatados_7d: 0,
           novos_clientes_7d: [],
           ultimos_resgates: [],
         }
@@ -208,6 +227,7 @@ export class DashboardService {
           clientes_7d_variacao: 0,
           pontos_creditados_7d: 0,
           pontos_resgatados_7d: 0,
+          itens_resgatados_7d: 0,
           novos_clientes_7d: [],
           ultimos_resgates: [],
         }
