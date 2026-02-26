@@ -254,5 +254,118 @@ export class DashboardService {
       client.release()
     }
   }
+
+  async getChartData(schema: string, kpi: string, periodDays: number, lojaIds?: number[]): Promise<any[]> {
+    const client = await pool.connect()
+    try {
+      const lojaCondition = lojaIds && lojaIds.length > 0
+        ? `AND id_loja = ANY($1::int[])`
+        : ''
+      const lojaParams = lojaIds && lojaIds.length > 0 ? [lojaIds] : []
+
+      if (kpi === 'itens-resgatados') {
+        // Ranking of items (ranking doesn't need generate_series for time gaps, just the top items)
+        const query = `
+          SELECT 
+            COALESCE(ir.nome_item, 'Item não encontrado') as label,
+            COUNT(*)::int as value
+          FROM "${schema}".cliente_pontos_movimentacao m
+          INNER JOIN "${schema}".clientes c ON m.id_cliente = c.id_cliente
+          LEFT JOIN "${schema}".itens_recompensa ir ON m.id_item_recompensa = ir.id_item_recompensa
+          WHERE m.tipo = 'DEBITO' 
+            AND m.origem = 'RESGATE'
+            AND m.dt_cadastro >= NOW() - INTERVAL '${periodDays} days'
+            ${lojaIds && lojaIds.length > 0 ? `AND c.id_loja = ANY($1::int[])` : ''}
+          GROUP BY ir.nome_item
+          ORDER BY value DESC
+        `
+        const result = await client.query(query, lojaParams)
+        return result.rows
+      }
+
+      let seriesInterval = ''
+      let grouping = ''
+      let startOffset = ''
+
+      if (periodDays === 365) {
+        seriesInterval = '1 month'
+        grouping = "TO_CHAR(series, 'YYYY-MM')"
+        startOffset = "DATE_TRUNC('month', NOW() - INTERVAL '364 days')"
+      } else if (periodDays === 90) {
+        seriesInterval = '1 week'
+        grouping = "TO_CHAR(DATE_TRUNC('week', series), 'YYYY-\"W\"IW')"
+        startOffset = "DATE_TRUNC('week', NOW() - INTERVAL '89 days')"
+      } else {
+        seriesInterval = '1 day'
+        grouping = "TO_CHAR(series, 'YYYY-MM-DD')"
+        startOffset = `DATE_TRUNC('day', NOW() - INTERVAL '${periodDays - 1} days')`
+      }
+
+      let metricQuery = ''
+      if (kpi === 'novos-clientes') {
+        metricQuery = `
+          SELECT 
+            ${grouping.replace(/series/g, 'dt_cadastro')} as label,
+            COUNT(*)::int as val
+          FROM "${schema}".clientes
+          WHERE dt_cadastro >= ${startOffset}
+            ${lojaCondition}
+          GROUP BY label
+        `
+      } else if (kpi === 'pontos-creditados') {
+        metricQuery = `
+          SELECT 
+            ${grouping.replace(/series/g, 'm.dt_cadastro')} as label,
+            COALESCE(SUM(m.pontos), 0)::int as val
+          FROM "${schema}".cliente_pontos_movimentacao m
+          INNER JOIN "${schema}".clientes c ON m.id_cliente = c.id_cliente
+          WHERE m.tipo = 'CREDITO' 
+            AND m.dt_cadastro >= ${startOffset}
+            ${lojaIds && lojaIds.length > 0 ? `AND c.id_loja = ANY($1::int[])` : ''}
+          GROUP BY label
+        `
+      } else if (kpi === 'pontos-resgatados') {
+        metricQuery = `
+          SELECT 
+            ${grouping.replace(/series/g, 'm.dt_cadastro')} as label,
+            COALESCE(SUM(m.pontos), 0)::int as val
+          FROM "${schema}".cliente_pontos_movimentacao m
+          INNER JOIN "${schema}".clientes c ON m.id_cliente = c.id_cliente
+          WHERE m.tipo = 'DEBITO' 
+            AND m.origem = 'RESGATE'
+            AND m.dt_cadastro >= ${startOffset}
+            ${lojaIds && lojaIds.length > 0 ? `AND c.id_loja = ANY($1::int[])` : ''}
+          GROUP BY label
+        `
+      }
+
+      const finalQuery = `
+        WITH time_series AS (
+          SELECT generate_series(
+            ${startOffset},
+            NOW(),
+            '${seriesInterval}'::interval
+          ) as series
+        ),
+        metrics AS (
+          ${metricQuery}
+        )
+        SELECT 
+          ${grouping} as label,
+          COALESCE(m.val, 0) as value
+        FROM time_series ts
+        LEFT JOIN metrics m ON ${grouping} = m.label
+        ORDER BY ts.series ASC
+      `
+
+      const result = await client.query(finalQuery, lojaParams)
+      return result.rows
+    } catch (error) {
+      console.error(`[DashboardService] Erro ao buscar dados do gráfico (${kpi}):`, error)
+      throw error
+    } finally {
+      client.release()
+    }
+  }
 }
 

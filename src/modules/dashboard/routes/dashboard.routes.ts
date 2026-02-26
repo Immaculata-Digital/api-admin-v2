@@ -6,4 +6,5 @@ export const dashboardRoutes = Router()
 
 // Rotas com schema no path
 dashboardRoutes.get('/:schema/dashboard', tenantSchema, dashboardController.getDashboard)
+dashboardRoutes.get('/:schema/dashboard/charts', tenantSchema, dashboardController.getChartData)
 

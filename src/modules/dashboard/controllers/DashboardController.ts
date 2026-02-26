@@ -39,6 +39,40 @@ export class DashboardController {
       return next(error)
     }
   }
+
+  getChartData = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const schema = req.schema!
+      const kpi = req.query.kpi as string
+      const period = Number(req.query.period)
+      const lojaIdParam = req.query.idLoja as string | undefined
+      let lojaIds: number[] | undefined
+
+      if (!kpi || !period) {
+        return res.status(400).json({ message: 'Parâmetros kpi e period são obrigatórios' })
+      }
+
+      if (lojaIdParam) {
+        const parsedIds = lojaIdParam.split(',').map(id => Number(id.trim())).filter(id => !Number.isNaN(id) && id > 0)
+        if (parsedIds.length > 0) {
+          lojaIds = parsedIds
+        }
+      }
+
+      if (req.user?.userId && !lojaIds) {
+        const userId = req.user.userId
+        const lojasGestoras = await this.dashboardService.getLojasGestorasForUserInSchema(userId, schema)
+        if (lojasGestoras.length > 0) {
+          lojaIds = lojasGestoras
+        }
+      }
+
+      const data = await this.dashboardService.getChartData(schema, kpi, period, lojaIds)
+      return res.json(data)
+    } catch (error) {
+      return next(error)
+    }
+  }
 }
 
 export const dashboardController = new DashboardController()
