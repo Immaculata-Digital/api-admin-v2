@@ -19,6 +19,13 @@ export interface DashboardResgate {
   status: 'pendente' | 'aprovado' | 'rejeitado' | 'entregue'
 }
 
+export interface LojaRankingClientes {
+  id_loja: number
+  nome_loja: string
+  quantidade: number
+  posicao: number
+}
+
 export interface DashboardResponse {
   clientes_total: number
   clientes_7d: number
@@ -26,7 +33,7 @@ export interface DashboardResponse {
   pontos_creditados_7d: number
   pontos_resgatados_7d: number
   itens_resgatados_7d: number
-  novos_clientes_7d: DashboardCliente[]
+  lojas_ranking_novos_clientes: LojaRankingClientes[]
   ultimos_resgates: DashboardResgate[]
 }
 
@@ -126,21 +133,30 @@ export class DashboardService {
       )
       const itens_resgatados_7d = parseInt(itensResgatadosResult.rows[0]?.count || '0', 10)
 
-      // Novos clientes dos últimos 7 dias
-      const novosClientesCondition = lojaIds && lojaIds.length > 0
-        ? `AND c.id_loja = ANY($1::int[])`
-        : ''
-      const novosClientesQuery = `SELECT c.id_cliente, c.nome_completo as nome, c.email, c.whatsapp, 
-                  c.dt_cadastro::text, COALESCE(c.saldo, 0) as pontos_saldo 
-           FROM "${schema}".clientes c
-           WHERE c.dt_cadastro >= NOW() - INTERVAL '7 days' ${novosClientesCondition}
-           ORDER BY c.dt_cadastro DESC LIMIT 10`
+      // Ranking de Lojas por Novos Clientes (7 dias) independente do filtro de loja atual
+      const rankingLojasQuery = `
+           SELECT 
+             l.id_loja, 
+             l.nome_loja, 
+             COUNT(c.id_cliente)::int as quantidade
+           FROM "${schema}".lojas l
+           LEFT JOIN "${schema}".clientes c ON c.id_loja = l.id_loja AND c.dt_cadastro >= NOW() - INTERVAL '7 days'
+           GROUP BY l.id_loja, l.nome_loja
+           ORDER BY quantidade DESC, l.nome_loja ASC
+      `
 
-      const novosClientesResult = await client.query<DashboardCliente>(
-        novosClientesQuery,
-        lojaParams
-      )
-      const novos_clientes_7d = novosClientesResult.rows
+      let lojas_ranking_novos_clientes: LojaRankingClientes[] = []
+      try {
+        const rankingLojasResult = await client.query<{ id_loja: number, nome_loja: string, quantidade: number }>(rankingLojasQuery)
+        lojas_ranking_novos_clientes = rankingLojasResult.rows.map((row, index) => ({
+          id_loja: row.id_loja,
+          nome_loja: row.nome_loja,
+          quantidade: row.quantidade,
+          posicao: index + 1
+        }))
+      } catch (error) {
+        console.warn('Erro ao buscar ranking de lojas:', error)
+      }
 
       // Últimos resgates (da tabela cliente_pontos_movimentacao com LEFT JOIN em clientes_itens_recompensa)
       // Usa LEFT JOIN porque a tabela clientes_itens_recompensa pode não existir em schemas antigos
@@ -187,7 +203,7 @@ export class DashboardService {
         pontos_creditados_7d,
         pontos_resgatados_7d,
         itens_resgatados_7d,
-        novos_clientes_7d,
+        lojas_ranking_novos_clientes,
         ultimos_resgates,
       }
     } catch (error: any) {
@@ -215,7 +231,7 @@ export class DashboardService {
           pontos_creditados_7d: 0,
           pontos_resgatados_7d: 0,
           itens_resgatados_7d: 0,
-          novos_clientes_7d: [],
+          lojas_ranking_novos_clientes: [],
           ultimos_resgates: [],
         }
       } catch (fallbackError) {
@@ -228,7 +244,7 @@ export class DashboardService {
           pontos_creditados_7d: 0,
           pontos_resgatados_7d: 0,
           itens_resgatados_7d: 0,
-          novos_clientes_7d: [],
+          lojas_ranking_novos_clientes: [],
           ultimos_resgates: [],
         }
       }
