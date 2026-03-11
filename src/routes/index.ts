@@ -7,6 +7,7 @@ import { webRadioRoutes } from '../modules/webradio/routes/webRadio.routes'
 import { logSistemaRoutes } from '../modules/logs-sistema/routes/logSistema.routes'
 import { dashboardRoutes } from '../modules/dashboard/routes/dashboard.routes'
 import { schemaRoutes } from '../modules/schema/routes/schema.routes'
+import { relatorioRoutes } from '../modules/relatorios/routes/relatorio.routes'
 
 const router = Router()
 
@@ -24,6 +25,7 @@ router.use(webRadioRoutes)
 router.use(logSistemaRoutes)
 router.use(dashboardRoutes)
 router.use(schemaRoutes)
+router.use(relatorioRoutes)
 
 export { router as routes }
 
