@@ -420,7 +420,7 @@ export class DashboardService {
         ORDER BY m.dt_cadastro DESC LIMIT 10`, lojaParams)
 
       const row = cardsResult.rows[0] || { clientes: 0, vendas: 0, creditos: 0, resgates: 0 }
-      const ticketMedio = row.vendas > 0 ? row.creditos / row.vendas : 0
+      const ticketMedio = row.vendas > 0 ? (row.creditos / row.vendas) / 10 : 0
 
       return {
         cards: {
@@ -470,7 +470,7 @@ export class DashboardService {
           if (kpi === 'pontos_creditados') metricSql = 'COALESCE(SUM(m.pontos), 0)::int'
           else if (kpi === 'pontos_resgatados') metricSql = 'COALESCE(SUM(m.pontos), 0)::int'
           else if (kpi === 'vendas') metricSql = 'COUNT(m.id_movimentacao)::int'
-          else if (kpi === 'ticket_medio') metricSql = '(CASE WHEN COUNT(m.id_movimentacao) > 0 THEN ROUND(SUM(m.pontos)::numeric / COUNT(m.id_movimentacao), 2) ELSE 0 END)::float'
+          else if (kpi === 'ticket_medio') metricSql = '(CASE WHEN COUNT(m.id_movimentacao) > 0 THEN ROUND((SUM(m.pontos)::numeric / COUNT(m.id_movimentacao)) / 10, 2) ELSE 0 END)::float'
 
           const moveTypeCondition = kpi === 'pontos_resgatados' 
             ? "m.tipo = 'DEBITO' AND m.origem = 'RESGATE'" 
