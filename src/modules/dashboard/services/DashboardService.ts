@@ -88,7 +88,7 @@ export class DashboardService {
 
       // Pontos creditados nos últimos 7 dias (da tabela cliente_pontos_movimentacao)
       const pontosCreditadosCondition = lojaIds && lojaIds.length > 0
-        ? `AND c.id_loja = ANY($1::int[])`
+        ? `AND COALESCE(m.id_loja, c.id_loja) = ANY($1::int[])`
         : ''
       const pontosCreditadosQuery = `SELECT COALESCE(SUM(m.pontos), 0) as sum 
            FROM "${schema}".cliente_pontos_movimentacao m
@@ -103,7 +103,7 @@ export class DashboardService {
 
       // Pontos resgatados nos últimos 7 dias (da tabela cliente_pontos_movimentacao com tipo DEBITO e origem RESGATE)
       const pontosResgatadosCondition = lojaIds && lojaIds.length > 0
-        ? `AND c.id_loja = ANY($1::int[])`
+        ? `AND COALESCE(m.id_loja, c.id_loja) = ANY($1::int[])`
         : ''
       const pontosResgatadosQuery = `SELECT COALESCE(SUM(m.pontos), 0) as sum 
            FROM "${schema}".cliente_pontos_movimentacao m
@@ -119,7 +119,7 @@ export class DashboardService {
 
       // Itens resgatados nos últimos 7 dias
       const itensResgatadosCondition = lojaIds && lojaIds.length > 0
-        ? `AND c.id_loja = ANY($1::int[])`
+        ? `AND COALESCE(m.id_loja, c.id_loja) = ANY($1::int[])`
         : ''
       const itensResgatadosQuery = `SELECT COUNT(*) as count 
            FROM "${schema}".cliente_pontos_movimentacao m
@@ -161,7 +161,7 @@ export class DashboardService {
       // Últimos resgates (da tabela cliente_pontos_movimentacao com LEFT JOIN em clientes_itens_recompensa)
       // Usa LEFT JOIN porque a tabela clientes_itens_recompensa pode não existir em schemas antigos
       const ultimosResgatesCondition = lojaIds && lojaIds.length > 0
-        ? `AND c.id_loja = ANY($1::int[])`
+        ? `AND COALESCE(m.id_loja, c.id_loja) = ANY($1::int[])`
         : ''
       const ultimosResgatesQuery = `SELECT 
              COALESCE(cir.id_cliente_item_recompensa, m.id_movimentacao) as id_resgate,
@@ -291,7 +291,7 @@ export class DashboardService {
           WHERE m.tipo = 'DEBITO' 
             AND m.origem = 'RESGATE'
             AND m.dt_cadastro >= NOW() - INTERVAL '${periodDays} days'
-            ${lojaIds && lojaIds.length > 0 ? `AND c.id_loja = ANY($1::int[])` : ''}
+            ${lojaIds && lojaIds.length > 0 ? `AND COALESCE(m.id_loja, c.id_loja) = ANY($1::int[])` : ''}
           GROUP BY ir.nome_item
           ORDER BY value DESC
         `
@@ -337,7 +337,7 @@ export class DashboardService {
           INNER JOIN "${schema}".clientes c ON m.id_cliente = c.id_cliente
           WHERE m.tipo = 'CREDITO' 
             AND m.dt_cadastro >= ${startOffset}
-            ${lojaIds && lojaIds.length > 0 ? `AND c.id_loja = ANY($1::int[])` : ''}
+            ${lojaIds && lojaIds.length > 0 ? `AND COALESCE(m.id_loja, c.id_loja) = ANY($1::int[])` : ''}
           GROUP BY label
         `
       } else if (kpi === 'pontos-resgatados') {
@@ -350,7 +350,7 @@ export class DashboardService {
           WHERE m.tipo = 'DEBITO' 
             AND m.origem = 'RESGATE'
             AND m.dt_cadastro >= ${startOffset}
-            ${lojaIds && lojaIds.length > 0 ? `AND c.id_loja = ANY($1::int[])` : ''}
+            ${lojaIds && lojaIds.length > 0 ? `AND COALESCE(m.id_loja, c.id_loja) = ANY($1::int[])` : ''}
           GROUP BY label
         `
       }
@@ -379,6 +379,298 @@ export class DashboardService {
     } catch (error) {
       console.error(`[DashboardService] Erro ao buscar dados do gráfico (${kpi}):`, error)
       throw error
+    } finally {
+      client.release()
+    }
+  }
+
+  async getFidelidadeKPIs(schema: string, periodDays: number, lojaIds?: number[], startDate?: string, endDate?: string): Promise<any> {
+    const client = await pool.connect()
+    try {
+      const lojaConditionM = lojaIds && lojaIds.length > 0 ? `AND COALESCE(NULLIF(m.id_loja, 0), c.id_loja) = ANY($1::int[])` : ''
+      const lojaConditionC = lojaIds && lojaIds.length > 0 ? `AND c.id_loja = ANY($1::int[])` : ''
+      
+      let periodConditionC = ''
+      let periodConditionM = ''
+
+      if (startDate && endDate) {
+        periodConditionC = `AND c.dt_cadastro >= '${startDate} 00:00:00' AND c.dt_cadastro <= '${endDate} 23:59:59'`
+        periodConditionM = `AND m.dt_cadastro >= '${startDate} 00:00:00' AND m.dt_cadastro <= '${endDate} 23:59:59'`
+      } else if (periodDays > 0) {
+        periodConditionC = `AND c.dt_cadastro >= NOW() - INTERVAL '${periodDays} days'`
+        periodConditionM = `AND m.dt_cadastro >= NOW() - INTERVAL '${periodDays} days'`
+      }
+      const lojaParams = lojaIds && lojaIds.length > 0 ? [lojaIds] : []
+
+      const cardsQuery = `
+        SELECT 
+          (SELECT COUNT(*)::int FROM "${schema}".clientes c WHERE 1=1 ${periodConditionC} ${lojaConditionC}) as clientes,
+          (SELECT COUNT(*)::int FROM "${schema}".cliente_pontos_movimentacao m JOIN "${schema}".clientes c ON m.id_cliente = c.id_cliente WHERE m.tipo = 'CREDITO' ${periodConditionM} ${lojaConditionM}) as vendas,
+          (SELECT COALESCE(SUM(m.pontos), 0)::int FROM "${schema}".cliente_pontos_movimentacao m JOIN "${schema}".clientes c ON m.id_cliente = c.id_cliente WHERE m.tipo = 'CREDITO' ${periodConditionM} ${lojaConditionM}) as creditos,
+          (SELECT COALESCE(SUM(m.pontos), 0)::int FROM "${schema}".cliente_pontos_movimentacao m JOIN "${schema}".clientes c ON m.id_cliente = c.id_cliente WHERE m.tipo = 'DEBITO' AND m.origem = 'RESGATE' ${periodConditionM} ${lojaConditionM}) as resgates
+      `
+      const cardsResult = await client.query(cardsQuery, lojaParams)
+      
+      const resUltimos = await client.query(`
+        SELECT m.id_movimentacao as id_resgate, c.nome_completo as cliente_nome, COALESCE(ir.nome_item, 'Resgate') as item_nome, m.pontos, m.dt_cadastro::text as dt_resgate
+        FROM "${schema}".cliente_pontos_movimentacao m 
+        JOIN "${schema}".clientes c ON m.id_cliente = c.id_cliente 
+        LEFT JOIN "${schema}".itens_recompensa ir ON m.id_item_recompensa = ir.id_item_recompensa
+        WHERE m.tipo = 'DEBITO' AND m.origem = 'RESGATE' ${lojaConditionM}
+        ORDER BY m.dt_cadastro DESC LIMIT 10`, lojaParams)
+
+      const row = cardsResult.rows[0] || { clientes: 0, vendas: 0, creditos: 0, resgates: 0 }
+      const ticketMedio = row.vendas > 0 ? row.creditos / row.vendas : 0
+
+      return {
+        cards: {
+          clientes: { value: row.clientes },
+          pontos_creditados: { value: row.creditos },
+          pontos_resgatados: { value: row.resgates },
+          ticket_medio: { value: Math.round(ticketMedio * 100) / 100 },
+          vendas: { value: row.vendas }
+        },
+        ultimos_resgates: resUltimos.rows
+      }
+    } finally {
+      client.release()
+    }
+  }
+
+  async getFidelidadeStoresData(schema: string, kpi: string, periodDays: number, lojaIds?: number[], startDate?: string, endDate?: string): Promise<any[]> {
+    const client = await pool.connect()
+    try {
+      if (kpi === 'clientes' || kpi === 'pontos_creditados' || kpi === 'pontos_resgatados' || kpi === 'vendas' || kpi === 'ticket_medio') {
+        let periodCondition = ''
+        let clientPeriodCondition = ''
+
+        if (startDate && endDate) {
+          periodCondition = `AND m.dt_cadastro >= '${startDate} 00:00:00' AND m.dt_cadastro <= '${endDate} 23:59:59'`
+          clientPeriodCondition = `AND c.dt_cadastro >= '${startDate} 00:00:00' AND c.dt_cadastro <= '${endDate} 23:59:59'`
+        } else if (periodDays > 0) {
+          periodCondition = `AND m.dt_cadastro >= NOW() - INTERVAL '${periodDays} days'`
+          clientPeriodCondition = `AND c.dt_cadastro >= NOW() - INTERVAL '${periodDays} days'`
+        }
+        
+        let query = ''
+        if (kpi === 'clientes') {
+          if (lojaIds && lojaIds.length > 0) {
+            query = `
+              SELECT COALESCE(l.nome_loja, 'Unidade ' || ids.id) as label, COUNT(c.id_cliente)::int as value 
+              FROM (SELECT unnest($1::int[]) as id) ids
+              LEFT JOIN "${schema}".lojas l ON l.id_loja = ids.id
+              LEFT JOIN "${schema}".clientes c ON c.id_loja = ids.id ${clientPeriodCondition}
+              GROUP BY ids.id, l.nome_loja
+            `
+          } else {
+            query = `SELECT l.nome_loja as label, COUNT(c.id_cliente)::int as value FROM "${schema}".lojas l LEFT JOIN "${schema}".clientes c ON c.id_loja = l.id_loja ${clientPeriodCondition} GROUP BY l.id_loja, l.nome_loja`
+          }
+        } else {
+          let metricSql = ''
+          if (kpi === 'pontos_creditados') metricSql = 'COALESCE(SUM(m.pontos), 0)::int'
+          else if (kpi === 'pontos_resgatados') metricSql = 'COALESCE(SUM(m.pontos), 0)::int'
+          else if (kpi === 'vendas') metricSql = 'COUNT(m.id_movimentacao)::int'
+          else if (kpi === 'ticket_medio') metricSql = '(CASE WHEN COUNT(m.id_movimentacao) > 0 THEN ROUND(SUM(m.pontos)::numeric / COUNT(m.id_movimentacao), 2) ELSE 0 END)::float'
+
+          const moveTypeCondition = kpi === 'pontos_resgatados' 
+            ? "m.tipo = 'DEBITO' AND m.origem = 'RESGATE'" 
+            : "m.tipo = 'CREDITO'"
+
+          if (lojaIds && lojaIds.length > 0) {
+            query = `
+              SELECT COALESCE(l.nome_loja, 'Unidade ' || ids.id) as label, ${metricSql} as value 
+              FROM (SELECT unnest($1::int[]) as id) ids
+              LEFT JOIN "${schema}".lojas l ON l.id_loja = ids.id
+              LEFT JOIN (
+                SELECT m1.*, c1.id_loja as client_loja 
+                FROM "${schema}".cliente_pontos_movimentacao m1 
+                JOIN "${schema}".clientes c1 ON m1.id_cliente = c1.id_cliente
+              ) m ON ids.id = COALESCE(NULLIF(m.id_loja, 0), m.client_loja) 
+                AND ${moveTypeCondition} 
+                ${periodCondition}
+              GROUP BY ids.id, l.nome_loja
+            `
+          } else {
+            query = `
+              SELECT l.nome_loja as label, ${metricSql} as value 
+              FROM "${schema}".lojas l 
+              LEFT JOIN (
+                SELECT m1.*, c1.id_loja as client_loja 
+                FROM "${schema}".cliente_pontos_movimentacao m1 
+                JOIN "${schema}".clientes c1 ON m1.id_cliente = c1.id_cliente
+              ) m ON l.id_loja = COALESCE(NULLIF(m.id_loja, 0), m.client_loja) 
+                AND ${moveTypeCondition} 
+                ${periodCondition}
+              GROUP BY l.id_loja, l.nome_loja
+            `
+          }
+        }
+        const lojaParams = lojaIds && lojaIds.length > 0 ? [lojaIds] : []
+        const res = await client.query(query, lojaParams)
+        return res.rows
+      }
+      return []
+    } finally {
+      client.release()
+    }
+  }
+
+  async getClienteKPIs(schema: string, periodDays: number, lojaIds?: number[], startDate?: string, endDate?: string): Promise<any> {
+    const client = await pool.connect()
+    try {
+      let periodCondition = ''
+      if (startDate && endDate) {
+        periodCondition = `AND c.dt_cadastro >= '${startDate} 00:00:00' AND c.dt_cadastro <= '${endDate} 23:59:59'`
+      } else if (periodDays > 0) {
+        periodCondition = `AND c.dt_cadastro >= NOW() - INTERVAL '${periodDays} days'`
+      }
+      
+      const lojaCondition = lojaIds && lojaIds.length > 0 ? `AND c.id_loja = ANY($1::int[])` : ''
+      const lojaParams = lojaIds && lojaIds.length > 0 ? [lojaIds] : []
+
+      const cardsQuery = `
+        SELECT 
+          (SELECT COUNT(*)::int FROM "${schema}".clientes c WHERE 1=1 ${periodCondition} ${lojaCondition}) as ativos,
+          (SELECT COUNT(*)::int FROM "${schema}".clientes c WHERE 1=0 ${periodCondition} ${lojaCondition}) as inativos
+      `
+      const cardsResult = await client.query(cardsQuery, lojaParams)
+      const cards = cardsResult.rows[0] || { ativos: 0, inativos: 0 }
+
+      const resSexo = await client.query(`SELECT c.sexo, COUNT(*)::int as count FROM "${schema}".clientes c WHERE c.sexo IS NOT NULL ${periodCondition} ${lojaCondition} GROUP BY c.sexo`, lojaParams)
+      const resIdades = await client.query(`
+        SELECT 
+          CASE 
+            WHEN (EXTRACT(YEAR FROM NOW()) - EXTRACT(YEAR FROM c.data_nascimento)) BETWEEN 10 AND 20 THEN '10-20 ANOS'
+            WHEN (EXTRACT(YEAR FROM NOW()) - EXTRACT(YEAR FROM c.data_nascimento)) BETWEEN 21 AND 30 THEN '21-30 ANOS'
+            WHEN (EXTRACT(YEAR FROM NOW()) - EXTRACT(YEAR FROM c.data_nascimento)) BETWEEN 31 AND 40 THEN '31-40 ANOS'
+            WHEN (EXTRACT(YEAR FROM NOW()) - EXTRACT(YEAR FROM c.data_nascimento)) BETWEEN 41 AND 50 THEN '41-50 ANOS'
+            WHEN (EXTRACT(YEAR FROM NOW()) - EXTRACT(YEAR FROM c.data_nascimento)) BETWEEN 51 AND 60 THEN '51-60 ANOS'
+            ELSE '60+ ANOS'
+          END as range,
+          COUNT(*)::int as count
+        FROM "${schema}".clientes c 
+        WHERE c.data_nascimento IS NOT NULL ${periodCondition} ${lojaCondition}
+        GROUP BY range ORDER BY range`, lojaParams)
+
+      return {
+        cards: {
+          ativos: { value: cards.ativos },
+          inativos: { value: cards.inativos },
+          frequencia: { value: 2.5 }, 
+          sexo: resSexo.rows,
+          faixa_etaria: resIdades.rows
+        }
+      }
+    } finally {
+      client.release()
+    }
+  }
+
+  async getClienteStoresData(schema: string, kpi: string, periodDays: number, lojaIds?: number[], startDate?: string, endDate?: string): Promise<any[]> {
+    const client = await pool.connect()
+    try {
+      const lojaParams = lojaIds && lojaIds.length > 0 ? [lojaIds] : []
+      let periodCondition = ''
+      if (startDate && endDate) {
+        periodCondition = `AND c.dt_cadastro >= '${startDate} 00:00:00' AND c.dt_cadastro <= '${endDate} 23:59:59'`
+      } else if (periodDays > 0) {
+        periodCondition = `AND c.dt_cadastro >= NOW() - INTERVAL '${periodDays} days'`
+      }
+
+      if (kpi === 'ativos' || kpi === 'inativos') {
+        const situationFilter = kpi === 'ativos' ? '1=1' : '1=0'
+        let query = ''
+        if (lojaIds && lojaIds.length > 0) {
+          query = `
+            SELECT COALESCE(l.nome_loja, 'Unidade ' || ids.id) as label, COUNT(c.id_cliente)::int as value 
+            FROM (SELECT unnest($1::int[]) as id) ids
+            LEFT JOIN "${schema}".lojas l ON l.id_loja = ids.id
+            LEFT JOIN "${schema}".clientes c ON c.id_loja = ids.id AND ${situationFilter} ${periodCondition}
+            GROUP BY ids.id, l.nome_loja
+          `
+        } else {
+          query = `SELECT l.nome_loja as label, COUNT(c.id_cliente)::int as value FROM "${schema}".lojas l LEFT JOIN "${schema}".clientes c ON c.id_loja = l.id_loja AND ${situationFilter} ${periodCondition} GROUP BY l.id_loja, l.nome_loja`
+        }
+        const res = await client.query(query, lojaParams)
+        return res.rows
+      } else if (kpi === 'sexo') {
+        let query = ''
+        if (lojaIds && lojaIds.length > 0) {
+           query = `
+            SELECT ids.id as loja_id, COALESCE(l.nome_loja, 'Unidade ' || ids.id) as label, c.sexo, COUNT(c.id_cliente)::int as count 
+            FROM (SELECT unnest($1::int[]) as id) ids
+            LEFT JOIN "${schema}".lojas l ON l.id_loja = ids.id
+            LEFT JOIN "${schema}".clientes c ON c.id_loja = ids.id AND c.sexo IS NOT NULL ${periodCondition}
+            GROUP BY ids.id, l.nome_loja, c.sexo
+          `
+        } else {
+           query = `
+            SELECT l.id_loja as loja_id, l.nome_loja as label, c.sexo, COUNT(c.id_cliente)::int as count 
+            FROM "${schema}".lojas l 
+            LEFT JOIN "${schema}".clientes c ON c.id_loja = l.id_loja AND c.sexo IS NOT NULL ${periodCondition}
+            GROUP BY l.id_loja, l.nome_loja, c.sexo
+          `
+        }
+        const res = await client.query(query, lojaParams)
+        const grouped = res.rows.reduce((acc: any, row: any) => {
+          if (!acc[row.label]) acc[row.label] = { label: row.label, counts: {} }
+          if (row.sexo) {
+             const key = row.sexo === 'F' ? 'FEMININO' : row.sexo === 'M' ? 'MASCULINO' : 'OUTROS'
+             acc[row.label].counts[key] = (acc[row.label].counts[key] || 0) + row.count
+          }
+          return acc
+        }, {})
+        return Object.values(grouped)
+      } else if (kpi === 'faixa_etaria') {
+        let query = ''
+        const ageCase = `
+          CASE 
+            WHEN (EXTRACT(YEAR FROM NOW()) - EXTRACT(YEAR FROM c.data_nascimento)) BETWEEN 10 AND 20 THEN '10-20 ANOS'
+            WHEN (EXTRACT(YEAR FROM NOW()) - EXTRACT(YEAR FROM c.data_nascimento)) BETWEEN 21 AND 30 THEN '21-30 ANOS'
+            WHEN (EXTRACT(YEAR FROM NOW()) - EXTRACT(YEAR FROM c.data_nascimento)) BETWEEN 31 AND 40 THEN '31-40 ANOS'
+            WHEN (EXTRACT(YEAR FROM NOW()) - EXTRACT(YEAR FROM c.data_nascimento)) BETWEEN 41 AND 50 THEN '41-50 ANOS'
+            WHEN (EXTRACT(YEAR FROM NOW()) - EXTRACT(YEAR FROM c.data_nascimento)) BETWEEN 51 AND 60 THEN '51-60 ANOS'
+            ELSE '60+ ANOS'
+          END
+        `
+        if (lojaIds && lojaIds.length > 0) {
+           query = `
+            SELECT ids.id as loja_id, COALESCE(l.nome_loja, 'Unidade ' || ids.id) as label, ${ageCase} as range, COUNT(c.id_cliente)::int as count 
+            FROM (SELECT unnest($1::int[]) as id) ids
+            LEFT JOIN "${schema}".lojas l ON l.id_loja = ids.id
+            LEFT JOIN "${schema}".clientes c ON c.id_loja = ids.id AND c.data_nascimento IS NOT NULL ${periodCondition}
+            GROUP BY ids.id, l.nome_loja, range
+          `
+        } else {
+           query = `
+            SELECT l.id_loja as loja_id, l.nome_loja as label, ${ageCase} as range, COUNT(c.id_cliente)::int as count 
+            FROM "${schema}".lojas l 
+            LEFT JOIN "${schema}".clientes c ON c.id_loja = l.id_loja AND c.data_nascimento IS NOT NULL ${periodCondition}
+            GROUP BY l.id_loja, l.nome_loja, range
+          `
+        }
+        const res = await client.query(query, lojaParams)
+        const grouped = res.rows.reduce((acc: any, row: any) => {
+          if (!acc[row.label]) acc[row.label] = { label: row.label, counts: {} }
+          if (row.range && row.count > 0) {
+             acc[row.label].counts[row.range] = (acc[row.label].counts[row.range] || 0) + row.count
+          }
+          return acc
+        }, {})
+        return Object.values(grouped)
+      }
+      return []
+    } finally {
+      client.release()
+    }
+  }
+
+  async getMapData(schema: string, lojaIds: number[]): Promise<any> {
+    const client = await pool.connect()
+    try {
+      const resLojas = await client.query(`SELECT id_loja, nome_loja, endereco_completo FROM "${schema}".lojas WHERE id_loja = ANY($1::int[])`, [lojaIds])
+      const resClientes = await client.query(`SELECT cep, COUNT(*)::int as total FROM "${schema}".clientes WHERE id_loja = ANY($1::int[]) AND cep IS NOT NULL GROUP BY cep`, [lojaIds])
+      return { lojas: resLojas.rows, clientes: resClientes.rows }
     } finally {
       client.release()
     }
