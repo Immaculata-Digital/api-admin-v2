@@ -551,12 +551,20 @@ export class DashboardService {
         FROM "${schema}".clientes c 
         WHERE c.data_nascimento IS NOT NULL ${periodCondition} ${lojaCondition}
         GROUP BY range ORDER BY range`, lojaParams)
+      const freqQuery = `
+        SELECT (COUNT(m.id_movimentacao)::float / NULLIF(COUNT(DISTINCT m.id_cliente), 0)::float) as value
+        FROM "${schema}".cliente_pontos_movimentacao m
+        JOIN "${schema}".clientes c ON c.id_cliente = m.id_cliente
+        WHERE 1=1 ${periodCondition.replace(/c\./g, 'm.')} ${lojaCondition.replace(/c\./g, 'm.')}
+      `
+      const freqRes = await client.query(freqQuery, lojaParams)
+      const frequenciaValue = freqRes.rows[0]?.value || 0
 
       return {
         cards: {
           ativos: { value: cards.ativos },
           inativos: { value: cards.inativos },
-          frequencia: { value: 2.5 }, 
+          frequencia: { value: Math.round(frequenciaValue * 10) / 10 }, 
           sexo: resSexo.rows,
           faixa_etaria: resIdades.rows
         }
@@ -593,6 +601,29 @@ export class DashboardService {
         }
         const res = await client.query(query, lojaParams)
         return res.rows
+      } else if (kpi === 'frequencia') {
+        let query = ''
+        const mPeriodCondition = periodCondition.replace(/c\./g, 'm.')
+        if (lojaIds && lojaIds.length > 0) {
+          query = `
+            SELECT COALESCE(l.nome_loja, 'Unidade ' || ids.id) as label, 
+                   (COUNT(m.id_movimentacao)::float / NULLIF(COUNT(DISTINCT m.id_cliente), 0)::float) as value
+            FROM (SELECT unnest($1::int[]) as id) ids
+            LEFT JOIN "${schema}".lojas l ON l.id_loja = ids.id
+            LEFT JOIN "${schema}".cliente_pontos_movimentacao m ON m.id_loja = ids.id ${mPeriodCondition}
+            GROUP BY ids.id, l.nome_loja
+          `
+        } else {
+          query = `
+            SELECT l.nome_loja as label, 
+                   (COUNT(m.id_movimentacao)::float / NULLIF(COUNT(DISTINCT m.id_cliente), 0)::float) as value
+            FROM "${schema}".lojas l 
+            LEFT JOIN "${schema}".cliente_pontos_movimentacao m ON m.id_loja = l.id_loja ${mPeriodCondition}
+            GROUP BY l.id_loja, l.nome_loja
+          `
+        }
+        const res = await client.query(query, lojaParams)
+        return res.rows.map(r => ({ label: r.label, value: Math.round(Number(r.value || 0) * 10) / 10 }))
       } else if (kpi === 'sexo') {
         let query = ''
         if (lojaIds && lojaIds.length > 0) {
