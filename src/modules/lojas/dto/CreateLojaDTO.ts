@@ -6,6 +6,8 @@ export interface CreateLojaDTO {
   telefone_responsavel?: string
   cnpj: string
   endereco_completo: string
+  latitude?: number | null
+  longitude?: number | null
   usu_cadastro?: string | null
 }
 

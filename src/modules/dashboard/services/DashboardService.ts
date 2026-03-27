@@ -412,11 +412,18 @@ export class DashboardService {
       const cardsResult = await client.query(cardsQuery, lojaParams)
       
       const resUltimos = await client.query(`
-        SELECT m.id_movimentacao as id_resgate, c.nome_completo as cliente_nome, COALESCE(ir.nome_item, 'Resgate') as item_nome, m.pontos, m.dt_cadastro::text as dt_resgate
+        SELECT 
+          m.id_movimentacao as id_resgate, 
+          c.nome_completo as cliente_nome, 
+          COALESCE(ir.nome_item, 'Resgate') as item_nome, 
+          m.pontos, 
+          m.dt_cadastro::text as dt_resgate,
+          COALESCE(l.nome_loja, 'Unidade ' || COALESCE(NULLIF(m.id_loja, 0), c.id_loja)) as loja_nome
         FROM "${schema}".cliente_pontos_movimentacao m 
         JOIN "${schema}".clientes c ON m.id_cliente = c.id_cliente 
         LEFT JOIN "${schema}".itens_recompensa ir ON m.id_item_recompensa = ir.id_item_recompensa
-        WHERE m.tipo = 'DEBITO' AND m.origem = 'RESGATE' ${lojaConditionM}
+        LEFT JOIN "${schema}".lojas l ON l.id_loja = COALESCE(NULLIF(m.id_loja, 0), c.id_loja)
+        WHERE m.tipo = 'DEBITO' AND m.origem = 'RESGATE' ${periodConditionM} ${lojaConditionM}
         ORDER BY m.dt_cadastro DESC LIMIT 10`, lojaParams)
 
       const row = cardsResult.rows[0] || { clientes: 0, vendas: 0, creditos: 0, resgates: 0 }
@@ -528,10 +535,38 @@ export class DashboardService {
       const lojaCondition = lojaIds && lojaIds.length > 0 ? `AND c.id_loja = ANY($1::int[])` : ''
       const lojaParams = lojaIds && lojaIds.length > 0 ? [lojaIds] : []
 
+      // Filtros para movimentação (Ativos)
+      let periodConditionM = ''
+      if (startDate && endDate) {
+        periodConditionM = `AND m.dt_cadastro >= '${startDate} 00:00:00' AND m.dt_cadastro <= '${endDate} 23:59:59'`
+      } else if (periodDays > 0) {
+        periodConditionM = `AND m.dt_cadastro >= NOW() - INTERVAL '${periodDays} days'`
+      }
+      const lojaConditionM = lojaIds && lojaIds.length > 0 ? `AND COALESCE(NULLIF(m.id_loja, 0), c.id_loja) = ANY($1::int[])` : ''
+
       const cardsQuery = `
         SELECT 
-          (SELECT COUNT(*)::int FROM "${schema}".clientes c WHERE 1=1 ${periodCondition} ${lojaCondition}) as ativos,
-          (SELECT COUNT(*)::int FROM "${schema}".clientes c WHERE 1=0 ${periodCondition} ${lojaCondition}) as inativos
+          (
+            SELECT COUNT(DISTINCT m.id_cliente)::int 
+            FROM "${schema}".cliente_pontos_movimentacao m
+            JOIN "${schema}".clientes c ON m.id_cliente = c.id_cliente
+            WHERE m.tipo = 'CREDITO' 
+            ${periodConditionM}
+            ${lojaConditionM}
+          ) as ativos,
+          (
+            SELECT COUNT(DISTINCT c.id_cliente)::int 
+            FROM "${schema}".clientes c
+            WHERE 1=1
+            ${lojaCondition}
+            AND NOT EXISTS (
+              SELECT 1 FROM "${schema}".cliente_pontos_movimentacao m
+              WHERE m.id_cliente = c.id_cliente
+              AND m.tipo = 'CREDITO'
+              ${periodConditionM}
+              ${lojaConditionM}
+            )
+          ) as inativos
       `
       const cardsResult = await client.query(cardsQuery, lojaParams)
       const cards = cardsResult.rows[0] || { ativos: 0, inativos: 0 }
@@ -590,18 +625,77 @@ export class DashboardService {
       }
 
       if (kpi === 'ativos' || kpi === 'inativos') {
-        const situationFilter = kpi === 'ativos' ? '1=1' : '1=0'
+        let periodConditionM = ''
+        if (startDate && endDate) {
+          periodConditionM = `AND m.dt_cadastro >= '${startDate} 00:00:00' AND m.dt_cadastro <= '${endDate} 23:59:59'`
+        } else if (periodDays > 0) {
+          periodConditionM = `AND m.dt_cadastro >= NOW() - INTERVAL '${periodDays} days'`
+        }
+
         let query = ''
-        if (lojaIds && lojaIds.length > 0) {
-          query = `
-            SELECT COALESCE(l.nome_loja, 'Unidade ' || ids.id) as label, COUNT(c.id_cliente)::int as value 
-            FROM (SELECT unnest($1::int[]) as id) ids
-            LEFT JOIN "${schema}".lojas l ON l.id_loja = ids.id
-            LEFT JOIN "${schema}".clientes c ON c.id_loja = ids.id AND ${situationFilter} ${periodCondition}
-            GROUP BY ids.id, l.nome_loja
-          `
+        if (kpi === 'ativos') {
+          if (lojaIds && lojaIds.length > 0) {
+            query = `
+              SELECT COALESCE(l.nome_loja, 'Unidade ' || ids.id) as label, 
+                     COUNT(DISTINCT m.id_cliente)::int as value 
+              FROM (SELECT unnest($1::int[]) as id) ids
+              LEFT JOIN "${schema}".lojas l ON l.id_loja = ids.id
+              LEFT JOIN (
+                SELECT m1.id_cliente, COALESCE(NULLIF(m1.id_loja, 0), c1.id_loja) as id_loja_final
+                FROM "${schema}".cliente_pontos_movimentacao m1
+                JOIN "${schema}".clientes c1 ON m1.id_cliente = c1.id_cliente
+                WHERE m1.tipo = 'CREDITO' ${periodConditionM.replace(/m\./g, 'm1.')}
+              ) m ON m.id_loja_final = ids.id
+              GROUP BY ids.id, l.nome_loja
+            `
+          } else {
+            query = `
+              SELECT l.nome_loja as label, 
+                     COUNT(DISTINCT m.id_cliente)::int as value 
+              FROM "${schema}".lojas l 
+              LEFT JOIN (
+                SELECT m1.id_cliente, COALESCE(NULLIF(m1.id_loja, 0), c1.id_loja) as id_loja_final
+                FROM "${schema}".cliente_pontos_movimentacao m1
+                JOIN "${schema}".clientes c1 ON m1.id_cliente = c1.id_cliente
+                WHERE m1.tipo = 'CREDITO' ${periodConditionM.replace(/m\./g, 'm1.')}
+              ) m ON m.id_loja_final = l.id_loja
+              GROUP BY l.id_loja, l.nome_loja
+            `
+          }
         } else {
-          query = `SELECT l.nome_loja as label, COUNT(c.id_cliente)::int as value FROM "${schema}".lojas l LEFT JOIN "${schema}".clientes c ON c.id_loja = l.id_loja AND ${situationFilter} ${periodCondition} GROUP BY l.id_loja, l.nome_loja`
+          // Inativos
+          if (lojaIds && lojaIds.length > 0) {
+            query = `
+              SELECT COALESCE(l.nome_loja, 'Unidade ' || ids.id) as label, 
+                     COUNT(DISTINCT c.id_cliente)::int as value 
+              FROM (SELECT unnest($1::int[]) as id) ids
+              LEFT JOIN "${schema}".lojas l ON l.id_loja = ids.id
+              LEFT JOIN "${schema}".clientes c ON c.id_loja = ids.id
+                AND NOT EXISTS (
+                  SELECT 1 FROM "${schema}".cliente_pontos_movimentacao m
+                  WHERE m.id_cliente = c.id_cliente
+                  AND m.tipo = 'CREDITO'
+                  AND COALESCE(NULLIF(m.id_loja, 0), c.id_loja) = ids.id
+                  ${periodConditionM}
+                )
+              GROUP BY ids.id, l.nome_loja
+            `
+          } else {
+            query = `
+              SELECT l.nome_loja as label, 
+                     COUNT(DISTINCT c.id_cliente)::int as value 
+              FROM "${schema}".lojas l 
+              LEFT JOIN "${schema}".clientes c ON c.id_loja = l.id_loja
+                AND NOT EXISTS (
+                  SELECT 1 FROM "${schema}".cliente_pontos_movimentacao m
+                  WHERE m.id_cliente = c.id_cliente
+                  AND m.tipo = 'CREDITO'
+                  AND COALESCE(NULLIF(m.id_loja, 0), c.id_loja) = l.id_loja
+                  ${periodConditionM}
+                )
+              GROUP BY l.id_loja, l.nome_loja
+            `
+          }
         }
         const res = await client.query(query, lojaParams)
         return res.rows
@@ -703,8 +797,17 @@ export class DashboardService {
   async getMapData(schema: string, lojaIds: number[]): Promise<any> {
     const client = await pool.connect()
     try {
-      const resLojas = await client.query(`SELECT id_loja, nome_loja, endereco_completo FROM "${schema}".lojas WHERE id_loja = ANY($1::int[])`, [lojaIds])
-      const resClientes = await client.query(`SELECT cep, COUNT(*)::int as total FROM "${schema}".clientes WHERE id_loja = ANY($1::int[]) AND cep IS NOT NULL GROUP BY cep`, [lojaIds])
+      const resLojas = await client.query(`SELECT id_loja, nome_loja, endereco_completo, latitude, longitude FROM "${schema}".lojas WHERE id_loja = ANY($1::int[])`, [lojaIds])
+      const resClientes = await client.query(`
+        SELECT 
+          cep, 
+          latitude, 
+          longitude, 
+          COUNT(*)::int as total,
+          json_agg(json_build_object('nome', nome_completo, 'saldo', saldo)) as listagem_clientes
+        FROM "${schema}".clientes 
+        WHERE id_loja = ANY($1::int[]) AND cep IS NOT NULL 
+        GROUP BY cep, latitude, longitude`, [lojaIds])
       return { lojas: resLojas.rows, clientes: resClientes.rows }
     } finally {
       client.release()

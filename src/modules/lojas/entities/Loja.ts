@@ -7,6 +7,8 @@ export interface LojaProps {
   telefone_responsavel: string
   cnpj: string
   endereco_completo: string
+  latitude?: number | null
+  longitude?: number | null
   dt_cadastro?: Date
   usu_cadastro: string | null
   dt_altera?: Date | null
@@ -23,6 +25,8 @@ export type UpdateLojaProps = {
   telefone_responsavel?: string
   cnpj?: string
   endereco_completo?: string
+  latitude?: number | null
+  longitude?: number | null
   usu_altera?: string | null
 }
 
@@ -66,6 +70,12 @@ export class Loja {
     }
     if (typeof data.endereco_completo !== 'undefined') {
       nextProps.endereco_completo = data.endereco_completo
+    }
+    if (typeof data.latitude !== 'undefined') {
+      nextProps.latitude = data.latitude
+    }
+    if (typeof data.longitude !== 'undefined') {
+      nextProps.longitude = data.longitude
     }
 
     nextProps.usu_altera = data.usu_altera ?? null

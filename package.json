@@ -21,6 +21,7 @@
     "@types/bcryptjs": "^2.4.6",
     "@types/cookie-parser": "^1.4.9",
     "@types/multer": "^2.0.0",
+    "axios": "^1.13.6",
     "bcryptjs": "^3.0.3",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
@@ -48,4 +49,3 @@
     "typescript": "^5.9.3"
   }
 }
-

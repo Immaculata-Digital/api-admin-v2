@@ -11,6 +11,8 @@ type LojaRow = {
   telefone_responsavel: string
   cnpj: string
   endereco_completo: string
+  latitude: number | null
+  longitude: number | null
   dt_cadastro: Date
   usu_cadastro: string | null
   dt_altera: Date | null
@@ -26,6 +28,8 @@ const mapRowToProps = (row: LojaRow): LojaProps => ({
   telefone_responsavel: row.telefone_responsavel,
   cnpj: row.cnpj,
   endereco_completo: row.endereco_completo,
+  latitude: row.latitude ? Number(row.latitude) : null,
+  longitude: row.longitude ? Number(row.longitude) : null,
   dt_cadastro: row.dt_cadastro,
   usu_cadastro: row.usu_cadastro,
   dt_altera: row.dt_altera,
@@ -82,8 +86,8 @@ export class PostgresLojaRepository implements ILojaRepository {
     try {
       const result = await client.query<LojaRow>(
         `INSERT INTO "${schema}".lojas 
-         (nome_loja, nome_loja_publico, numero_identificador, nome_responsavel, telefone_responsavel, cnpj, endereco_completo, usu_cadastro, dt_cadastro)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+         (nome_loja, nome_loja_publico, numero_identificador, nome_responsavel, telefone_responsavel, cnpj, endereco_completo, latitude, longitude, usu_cadastro, dt_cadastro)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
          RETURNING *`,
         [
           data.nome_loja,
@@ -93,6 +97,8 @@ export class PostgresLojaRepository implements ILojaRepository {
           data.telefone_responsavel,
           data.cnpj,
           data.endereco_completo,
+          data.latitude ?? null,
+          data.longitude ?? null,
           data.usu_cadastro,
         ]
       )
@@ -140,6 +146,14 @@ export class PostgresLojaRepository implements ILojaRepository {
       if (typeof data.usu_altera !== 'undefined') {
         updates.push(`usu_altera = $${paramIndex++}`)
         values.push(data.usu_altera ?? null)
+      }
+      if (typeof data.latitude !== 'undefined') {
+        updates.push(`latitude = $${paramIndex++}`)
+        values.push(data.latitude)
+      }
+      if (typeof data.longitude !== 'undefined') {
+        updates.push(`longitude = $${paramIndex++}`)
+        values.push(data.longitude)
       }
 
       if (updates.length === 0) {
